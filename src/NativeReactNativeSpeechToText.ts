@@ -12,4 +12,6 @@ export interface Spec extends TurboModule {
   isAvailable(): Promise<boolean>;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('SpeechToText');
+export default TurboModuleRegistry.getEnforcing<Spec>(
+  'ReactNativeSpeechToText'
+);

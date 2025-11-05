@@ -1,7 +1,15 @@
 import { TurboModuleRegistry, type TurboModule } from 'react-native';
 
-export interface Spec extends TurboModule {
-  multiply(a: number, b: number): number;
+export interface SpeechResult {
+  transcript: string;
+  confidence: number;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('ReactNativeSpeechToText');
+export interface Spec extends TurboModule {
+  start(language: string): Promise<void>;
+  stop(): Promise<SpeechResult>;
+  requestPermissions(): Promise<boolean>;
+  isAvailable(): Promise<boolean>;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('SpeechToText');

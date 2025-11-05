@@ -22,15 +22,12 @@ export default function App() {
 
   const handleStart = async () => {
     try {
-      // Check availability
-      const available = await isAvailable();
-      if (!available) {
-        Alert.alert('Error', 'Speech recognition not available');
-        return;
-      }
+      console.log('🔍 Checking availability...');
 
-      // Request permissions
+      console.log('🔐 Requesting permissions...');
       const hasPermission = await requestPermissions();
+      console.log('Permission result:', hasPermission);
+
       if (!hasPermission) {
         Alert.alert(
           'Permission Denied',
@@ -39,11 +36,21 @@ export default function App() {
         return;
       }
 
-      // Start recognition
+      console.log('✅ Checking if available...');
+      const available = await isAvailable();
+      console.log('Available:', available);
+
+      if (!available) {
+        Alert.alert('Error', 'Speech recognition not available on this device');
+        return;
+      }
+
+      console.log('🎤 Starting recognition...');
       await start({ language: 'en-US' });
       setIsListening(true);
       setTranscript('🎤 Listening...');
       setConfidence(0);
+      console.log('✅ Recording started!');
     } catch (error) {
       console.error('Start error:', error);
       Alert.alert('Error', String(error));
@@ -52,7 +59,6 @@ export default function App() {
 
   const handleStop = async () => {
     try {
-      // Stop and get result
       const result: SpeechResult = await stop();
       setTranscript(result.transcript || 'No text detected');
       setConfidence(result.confidence);

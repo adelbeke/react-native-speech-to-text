@@ -2,6 +2,10 @@
 
 Convert audio to text
 
+| iOS      | Android |
+|----------|---------|
+| ![iOS Example](./preview/ios-preview.gif)  | TODO    |
+
 ## Installation
 
 

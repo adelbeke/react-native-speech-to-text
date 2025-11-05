@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import NativeSpeechToText, { type Spec } from './ReactNativeSpeechToText';
 
 const LINKING_ERROR =
-  `The package 'react-native-speech-to-text' doesn't seem to be linked. Make sure: \n\n` +
+  `The package '@dkable/react-native-speech-to-text' doesn't seem to be linked. Make sure: \n\n` +
   Platform.select({
     ios: "- Run 'pod install' in the ios/ directory\n",
     default: '',

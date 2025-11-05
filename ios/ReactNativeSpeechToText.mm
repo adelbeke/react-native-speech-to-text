@@ -1,6 +1,18 @@
 // ios/ReactNativeSpeechToText.mm
 #import "ReactNativeSpeechToText.h"
-#import "react_native_speech_to_text-Swift.h"
+
+@interface SpeechToTextImpl : NSObject
++ (instancetype)shared;
+- (void)startWithLanguage:(NSString *)language
+                  resolve:(RCTPromiseResolveBlock)resolve
+                   reject:(RCTPromiseRejectBlock)reject;
+- (void)stopWithResolve:(RCTPromiseResolveBlock)resolve
+                 reject:(RCTPromiseRejectBlock)reject;
+- (void)requestPermissionsWithResolve:(RCTPromiseResolveBlock)resolve
+                               reject:(RCTPromiseRejectBlock)reject;
+- (void)isAvailableWithResolve:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject;
+@end
 
 @implementation ReactNativeSpeechToText
 

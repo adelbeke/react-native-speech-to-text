@@ -2,6 +2,7 @@
 import Foundation
 import Speech
 import AVFoundation
+import React
 
 @objc(SpeechToTextImpl)
 public class SpeechToTextImpl: NSObject {
@@ -12,14 +13,11 @@ public class SpeechToTextImpl: NSObject {
   private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
   private var recognitionTask: SFSpeechRecognitionTask?
   private var audioEngine = AVAudioEngine()
-
   private var lastResult: SFSpeechRecognitionResult?
 
   private override init() {
     super.init()
   }
-
-  // MARK: - Request Permissions
 
   @objc public func requestPermissions(
   resolve: @escaping RCTPromiseResolveBlock,
@@ -41,8 +39,6 @@ public class SpeechToTextImpl: NSObject {
     }
   }
 
-  // MARK: - Check Availability
-
   @objc public func isAvailable(
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
@@ -51,14 +47,11 @@ public class SpeechToTextImpl: NSObject {
     resolve(available)
   }
 
-  // MARK: - Start Recognition
-
   @objc public func start(
   language: String,
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
   ) {
-    // Reset previous state
     lastResult = nil
 
     guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
@@ -117,8 +110,6 @@ public class SpeechToTextImpl: NSObject {
     }
   }
 
-  // MARK: - Stop Recognition
-
   @objc public func stop(
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
@@ -142,14 +133,11 @@ public class SpeechToTextImpl: NSObject {
       ])
     }
 
-    // Cleanup
     recognitionTask?.cancel()
     recognitionRequest = nil
     recognitionTask = nil
     lastResult = nil
   }
-
-  // MARK: - Private Helpers
 
   private func getConfidence(from result: SFSpeechRecognitionResult) -> Double {
     guard let segment = result.bestTranscription.segments.last else {

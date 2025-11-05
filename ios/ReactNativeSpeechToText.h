@@ -1,5 +1,5 @@
-#import <ReactNativeSpeechToTextSpec/ReactNativeSpeechToTextSpec.h>
+// ios/ReactNativeSpeechToText.h
+#import <React/RCTBridgeModule.h>
 
-@interface ReactNativeSpeechToText : NSObject <NativeReactNativeSpeechToTextSpec>
-
+@interface ReactNativeSpeechToText : NSObject <RCTBridgeModule>
 @end

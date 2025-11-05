@@ -1,21 +1,48 @@
+// ios/ReactNativeSpeechToText.mm
 #import "ReactNativeSpeechToText.h"
 
+@interface SpeechToTextImpl : NSObject
++ (instancetype)shared;
+- (void)startWithLanguage:(NSString *)language
+                  resolve:(RCTPromiseResolveBlock)resolve
+                   reject:(RCTPromiseRejectBlock)reject;
+- (void)stopWithResolve:(RCTPromiseResolveBlock)resolve
+                 reject:(RCTPromiseRejectBlock)reject;
+- (void)requestPermissionsWithResolve:(RCTPromiseResolveBlock)resolve
+                               reject:(RCTPromiseRejectBlock)reject;
+- (void)isAvailableWithResolve:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject;
+@end
+
 @implementation ReactNativeSpeechToText
-- (NSNumber *)multiply:(double)a b:(double)b {
-    NSNumber *result = @(a * b);
 
-    return result;
+RCT_EXPORT_MODULE(ReactNativeSpeechToText)
+
++ (BOOL)requiresMainQueueSetup {
+  return NO;
 }
 
-- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
-    (const facebook::react::ObjCTurboModule::InitParams &)params
-{
-    return std::make_shared<facebook::react::NativeReactNativeSpeechToTextSpecJSI>(params);
+RCT_EXPORT_METHOD(start:(NSString *)language
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
+  [[SpeechToTextImpl shared] startWithLanguage:language
+                                       resolve:resolve
+                                        reject:reject];
 }
 
-+ (NSString *)moduleName
-{
-  return @"ReactNativeSpeechToText";
+RCT_EXPORT_METHOD(stop:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
+  [[SpeechToTextImpl shared] stopWithResolve:resolve reject:reject];
+}
+
+RCT_EXPORT_METHOD(requestPermissions:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
+  [[SpeechToTextImpl shared] requestPermissionsWithResolve:resolve reject:reject];
+}
+
+RCT_EXPORT_METHOD(isAvailable:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
+  [[SpeechToTextImpl shared] isAvailableWithResolve:resolve reject:reject];
 }
 
 @end

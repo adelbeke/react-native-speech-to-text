@@ -120,7 +120,8 @@
     },
     "npm": {
       "publish": true,
-      "tag": "next"
+      "tag": "next",
+      "access": "public"
     },
     "github": {
       "release": true,

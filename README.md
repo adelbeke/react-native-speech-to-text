@@ -16,11 +16,12 @@ A powerful, easy-to-use React Native library for real-time speech-to-text conver
 - 🔒 **Built-in permission handling**
 - 🏗️ **New Architecture** ready (Turbo Modules)
 - 📝 **TypeScript** definitions included
+- ⚙️ **Expo Config Plugin** for automatic setup
 
 ## 📱 Demo
 
-| iOS | Android |
-| --- | ------- |
+| iOS                                                                                                       | Android                                                                                                   |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | <video src="https://github.com/user-attachments/assets/e48938ca-87a5-4343-ab76-cecc91b8380f" width="300"> | <video src="https://github.com/user-attachments/assets/2fbf41db-bf2d-4759-9181-0b8376a96dc1" width="300"> |
 
 ## 📦 Installation
@@ -35,7 +36,45 @@ or
 yarn add @dbkable/react-native-speech-to-text
 ```
 
-### iOS Setup
+### For Expo Projects
+
+Add the plugin to your `app.json` or `app.config.js`:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      "@dbkable/react-native-speech-to-text"
+    ]
+  }
+}
+```
+
+That's it! The plugin automatically configures permissions for both iOS and Android. Run `npx expo prebuild` to apply the changes.
+
+#### Custom Permission Messages (Optional)
+
+You can customize the iOS permission messages:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "@dbkable/react-native-speech-to-text",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "speechRecognitionPermission": "Allow $(PRODUCT_NAME) to recognize your speech"
+        }
+      ]
+    ]
+  }
+}
+```
+
+### For Bare React Native Projects
+
+#### iOS Setup
 
 Install pods:
 
@@ -52,7 +91,7 @@ Add the following to your `Info.plist`:
 <string>This app needs microphone access to record your voice</string>
 ```
 
-### Android Setup
+#### Android Setup
 
 Add the following permission to your `AndroidManifest.xml`:
 
@@ -163,9 +202,11 @@ await start({ language: 'en-US' });
 ```
 
 **Options:**
+
 - `language` (string, required): Language code (e.g., "en-US", "fr-FR", "es-ES", "de-DE")
 
 **Throws:**
+
 - `PERMISSION_DENIED`: User denied permissions
 - `NOT_AVAILABLE`: Speech recognition not available
 - `START_FAILED`: Failed to start recognition
@@ -195,6 +236,7 @@ const granted = await requestPermissions({
 ```
 
 **Options (Android only):**
+
 - `title` (string, optional): Dialog title
 - `message` (string, optional): Dialog message
 - `buttonNeutral` (string, optional): Neutral button text
@@ -238,6 +280,7 @@ listener.remove();
 ```
 
 **SpeechResult:**
+
 - `transcript` (string): The recognized text
 - `confidence` (number): Confidence score from 0.0 to 1.0
 - `isFinal` (boolean): `true` for final result, `false` for partial
@@ -258,6 +301,7 @@ listener.remove();
 ```
 
 **SpeechError:**
+
 - `code` (string): Error code (see [Error Codes](#error-codes))
 - `message` (string): Human-readable error message
 
@@ -319,6 +363,57 @@ enum SpeechErrorCode {
 }
 ```
 
+## ⚙️ Expo Plugin Configuration
+
+If you're using Expo, the plugin automatically configures native permissions for you.
+
+### Basic Usage
+
+```json
+{
+  "expo": {
+    "plugins": ["@dbkable/react-native-speech-to-text"]
+  }
+}
+```
+
+### With Custom Permission Messages
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "@dbkable/react-native-speech-to-text",
+        {
+          "microphonePermission": "Custom message for microphone access",
+          "speechRecognitionPermission": "Custom message for speech recognition"
+        }
+      ]
+    ]
+  }
+}
+```
+
+### Plugin Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `microphonePermission` | string | `"Allow $(PRODUCT_NAME) to access your microphone to record audio for speech recognition"` | iOS only: Custom message for `NSMicrophoneUsageDescription` |
+| `speechRecognitionPermission` | string | `"Allow $(PRODUCT_NAME) to use speech recognition to convert your voice to text"` | iOS only: Custom message for `NSSpeechRecognitionUsageDescription` |
+
+### What the Plugin Does
+
+The Expo Config Plugin automatically:
+- **iOS**: Adds `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` to `Info.plist`
+- **Android**: Adds `RECORD_AUDIO` permission to `AndroidManifest.xml`
+
+After adding or modifying the plugin configuration, run:
+
+```bash
+npx expo prebuild
+```
+
 ## 🌍 Supported Languages
 
 You can use any standard locale identifier. Here are some examples:
@@ -340,11 +435,15 @@ Availability depends on the device and platform. Use `isAvailable()` to check.
 
 ### "Permission denied" error
 
-**iOS:**
+**Expo users:** If you've added the plugin to your `app.json`, permissions should be configured automatically. Make sure to run `npx expo prebuild` after adding the plugin.
+
+**Bare React Native - iOS:**
+
 - Make sure you've added `NSSpeechRecognitionUsageDescription` and `NSMicrophoneUsageDescription` to your `Info.plist`
 - Check that the user granted permissions in Settings > Your App
 
-**Android:**
+**Bare React Native - Android:**
+
 - Ensure `RECORD_AUDIO` permission is in `AndroidManifest.xml`
 - Call `requestPermissions()` before `start()`
 
@@ -385,6 +484,7 @@ Availability depends on the device and platform. Use `isAvailable()` to check.
 ### Network errors
 
 Some speech recognition services require internet connectivity:
+
 - **iOS**: On-device recognition available on iOS 13+ for some languages
 - **Android**: Depends on the device's speech recognition provider
 

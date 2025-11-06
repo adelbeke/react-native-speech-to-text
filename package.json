@@ -1,7 +1,7 @@
 {
   "name": "@dbkable/react-native-speech-to-text",
   "version": "0.1.0",
-  "description": "Convert audio to text",
+  "description": "Cross-platform speech recognition library for React Native using native APIs (Speech Framework & SpeechRecognizer)",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
@@ -18,6 +18,7 @@
     "android",
     "ios",
     "cpp",
+    "app.plugin.js",
     "*.podspec",
     "react-native.config.js",
     "!ios/build",
@@ -43,7 +44,14 @@
   "keywords": [
     "react-native",
     "ios",
-    "android"
+    "android",
+    "speech",
+    "speech-to-text",
+    "voice",
+    "recognition",
+    "stt",
+    "transcription",
+    "expo"
   ],
   "repository": {
     "type": "git",
@@ -64,6 +72,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.35.0",
     "@evilmartians/lefthook": "^1.12.3",
+    "@expo/config-plugins": "^54.0.2",
     "@react-native-community/cli": "20.0.1",
     "@react-native/babel-preset": "0.81.1",
     "@react-native/eslint-config": "^0.81.1",
@@ -160,5 +169,10 @@
     "languages": "kotlin-objc",
     "type": "turbo-module",
     "version": "0.54.8"
+  },
+  "expo": {
+    "plugins": [
+      "./app.plugin.js"
+    ]
   }
 }

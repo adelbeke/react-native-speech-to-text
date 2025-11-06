@@ -21,7 +21,7 @@ A powerful, easy-to-use React Native library for real-time speech-to-text conver
 
 | iOS | Android |
 | --- | ------- |
-| <video src="./preview/ios-preview.mov" width="300"> | <video src="./preview/android-preview.MP4" width="300"> |
+| <video src="https://github.com/user-attachments/assets/e48938ca-87a5-4343-ab76-cecc91b8380f" width="300"> | <video src="https://github.com/user-attachments/assets/2fbf41db-bf2d-4759-9181-0b8376a96dc1" width="300"> |
 
 ## 📦 Installation
 

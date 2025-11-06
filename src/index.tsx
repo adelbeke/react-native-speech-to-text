@@ -1,5 +1,10 @@
-// src/index.tsx
-import { Platform, PermissionsAndroid } from 'react-native';
+import {
+  NativeEventEmitter,
+  NativeModules,
+  Platform,
+  PermissionsAndroid,
+  type EmitterSubscription,
+} from 'react-native';
 import NativeSpeechToText, { type Spec } from './ReactNativeSpeechToText';
 
 const LINKING_ERROR =
@@ -20,9 +25,27 @@ const SpeechToTextModule: Spec = NativeSpeechToText
       },
     });
 
+interface SpeechToTextEvents {
+  onSpeechResult: SpeechResult;
+  onSpeechError: { error: string };
+  onSpeechEnd: void;
+}
+
+type TypedEventEmitter = {
+  addListener<K extends keyof SpeechToTextEvents>(
+    eventType: K,
+    listener: (event: SpeechToTextEvents[K]) => void
+  ): EmitterSubscription;
+};
+
+const eventEmitter = new NativeEventEmitter(
+  NativeModules.ReactNativeSpeechToText
+) as TypedEventEmitter;
+
 export interface SpeechResult {
   transcript: string;
   confidence: number;
+  isFinal: boolean;
 }
 
 export interface SpeechToTextOptions {
@@ -37,29 +60,15 @@ export interface PermissionOptions {
   buttonPositive?: string;
 }
 
-/**
- * Start speech recognition
- * @param options - Configuration options
- * @param options.language - Language code
- */
 export async function start(options: SpeechToTextOptions): Promise<void> {
   const language = options.language;
   return SpeechToTextModule.start(language);
 }
 
-/**
- * Stop speech recognition and get the result
- * @returns The transcribed text and confidence score
- */
-export async function stop(): Promise<SpeechResult> {
+export async function stop(): Promise<void> {
   return SpeechToTextModule.stop();
 }
 
-/**
- * Request microphone and speech recognition permissions
- * @param options - Permission request options (Android only)
- * @returns true if permissions granted, false otherwise
- */
 export async function requestPermissions(
   options?: PermissionOptions
 ): Promise<boolean> {
@@ -83,15 +92,28 @@ export async function requestPermissions(
       return false;
     }
   } else {
-    // iOS - options ignored
     return SpeechToTextModule.requestPermissions();
   }
 }
 
-/**
- * Check if speech recognition is available
- * @returns true if available, false otherwise
- */
 export async function isAvailable(): Promise<boolean> {
   return SpeechToTextModule.isAvailable();
+}
+
+export function addSpeechResultListener(
+  callback: (result: SpeechResult) => void
+): EmitterSubscription {
+  return eventEmitter.addListener('onSpeechResult', callback);
+}
+
+export function addSpeechErrorListener(
+  callback: (error: { error: string }) => void
+): EmitterSubscription {
+  return eventEmitter.addListener('onSpeechError', callback);
+}
+
+export function addSpeechEndListener(
+  callback: () => void
+): EmitterSubscription {
+  return eventEmitter.addListener('onSpeechEnd', callback);
 }

@@ -1,4 +1,3 @@
-// ios/SpeechToText.swift
 import Foundation
 import Speech
 import AVFoundation
@@ -7,15 +6,17 @@ import React
 @objc(SpeechToTextImpl)
 public class SpeechToTextImpl: NSObject {
 
-  @objc public static let shared = SpeechToTextImpl()
-
   private var speechRecognizer: SFSpeechRecognizer?
   private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
   private var recognitionTask: SFSpeechRecognitionTask?
   private var audioEngine = AVAudioEngine()
-  private var lastResult: SFSpeechRecognitionResult?
+  private weak var eventEmitter: RCTEventEmitter?
+  private var lastTranscript: String = ""
+  private var lastConfidence: Double = 0.0
+  private var isManuallyStopped: Bool = false
 
-  private override init() {
+  @objc public init(eventEmitter: RCTEventEmitter) {
+    self.eventEmitter = eventEmitter
     super.init()
   }
 
@@ -43,7 +44,9 @@ public class SpeechToTextImpl: NSObject {
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
   ) {
-    let available = SFSpeechRecognizer.authorizationStatus() == .authorized
+    let authStatus = SFSpeechRecognizer.authorizationStatus()
+    let recognizerAvailable = SFSpeechRecognizer(locale: Locale(identifier: "en-US")) != nil
+    let available = (authStatus == .authorized || authStatus == .notDetermined) && recognizerAvailable
     resolve(available)
   }
 
@@ -52,7 +55,9 @@ public class SpeechToTextImpl: NSObject {
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
   ) {
-    lastResult = nil
+    lastTranscript = ""
+    lastConfidence = 0.0
+    isManuallyStopped = false
 
     guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
       reject("PERMISSION_DENIED", "Speech recognition not authorized", nil)
@@ -94,12 +99,32 @@ public class SpeechToTextImpl: NSObject {
         guard let self = self else { return }
 
         if let error = error {
-          print("Recognition error: \(error.localizedDescription)")
+          if !self.isManuallyStopped {
+            self.sendEvent(name: "onSpeechError", body: [
+              "error": error.localizedDescription
+            ])
+          }
           return
         }
 
         if let result = result {
-          self.lastResult = result
+          let transcript = result.bestTranscription.formattedString
+          let isFinal = result.isFinal
+          let confidence = self.getConfidence(from: result)
+
+          self.lastTranscript = transcript
+          self.lastConfidence = confidence
+
+          self.sendEvent(name: "onSpeechResult", body: [
+            "transcript": transcript,
+            "isFinal": isFinal,
+            "confidence": confidence
+          ])
+
+          if isFinal {
+            self.stopRecognition()
+            self.sendEvent(name: "onSpeechEnd", body: [:])
+          }
         }
       }
 
@@ -114,29 +139,28 @@ public class SpeechToTextImpl: NSObject {
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
   ) {
-    audioEngine.stop()
-    audioEngine.inputNode.removeTap(onBus: 0)
-    recognitionRequest?.endAudio()
+    isManuallyStopped = true
 
-    if let result = lastResult {
-      let transcript = result.bestTranscription.formattedString
-      let confidence = getConfidence(from: result)
-
-      resolve([
-        "transcript": transcript,
-        "confidence": confidence
-      ])
-    } else {
-      resolve([
-        "transcript": "",
-        "confidence": 0.0
+    if !lastTranscript.isEmpty {
+      sendEvent(name: "onSpeechResult", body: [
+        "transcript": lastTranscript,
+        "isFinal": true,
+        "confidence": lastConfidence
       ])
     }
 
+    stopRecognition()
+    sendEvent(name: "onSpeechEnd", body: [:])
+    resolve(nil)
+  }
+
+  private func stopRecognition() {
+    audioEngine.stop()
+    audioEngine.inputNode.removeTap(onBus: 0)
+    recognitionRequest?.endAudio()
     recognitionTask?.cancel()
     recognitionRequest = nil
     recognitionTask = nil
-    lastResult = nil
   }
 
   private func getConfidence(from result: SFSpeechRecognitionResult) -> Double {
@@ -144,5 +168,9 @@ public class SpeechToTextImpl: NSObject {
       return 0.0
     }
     return Double(segment.confidence)
+  }
+
+  private func sendEvent(name: String, body: [String: Any]) {
+    eventEmitter?.sendEvent(withName: name, body: body)
   }
 }

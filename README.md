@@ -2,20 +2,17 @@
 
 Convert audio to text
 
-| iOS      | Android |
-|----------|---------|
-| ![iOS Example](./preview/ios-preview.gif)  | TODO    |
+| iOS                                       | Android |
+| ----------------------------------------- | ------- |
+| ![iOS Example](./preview/ios-preview.gif) | TODO    |
 
 ## Installation
-
 
 ```sh
 npm install @dbkable/react-native-speech-to-text
 ```
 
-
 ## Usage
-
 
 ```js
 import { multiply } from '@dbkable/react-native-speech-to-text';
@@ -24,7 +21,6 @@ import { multiply } from '@dbkable/react-native-speech-to-text';
 
 const result = multiply(3, 7);
 ```
-
 
 ## Contributing
 

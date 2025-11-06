@@ -1,8 +1,7 @@
-// ios/ReactNativeSpeechToText.mm
 #import "ReactNativeSpeechToText.h"
 
 @interface SpeechToTextImpl : NSObject
-+ (instancetype)shared;
+- (instancetype)initWithEventEmitter:(RCTEventEmitter *)emitter;
 - (void)startWithLanguage:(NSString *)language
                   resolve:(RCTPromiseResolveBlock)resolve
                    reject:(RCTPromiseRejectBlock)reject;
@@ -14,7 +13,10 @@
                         reject:(RCTPromiseRejectBlock)reject;
 @end
 
-@implementation ReactNativeSpeechToText
+@implementation ReactNativeSpeechToText {
+  SpeechToTextImpl *_impl;
+  BOOL _hasListeners;
+}
 
 RCT_EXPORT_MODULE(ReactNativeSpeechToText)
 
@@ -22,27 +24,58 @@ RCT_EXPORT_MODULE(ReactNativeSpeechToText)
   return NO;
 }
 
+- (instancetype)init {
+  if (self = [super init]) {
+    _impl = [[SpeechToTextImpl alloc] initWithEventEmitter:self];
+    _hasListeners = NO;
+  }
+  return self;
+}
+
+- (NSArray<NSString *> *)supportedEvents {
+  return @[@"onSpeechResult", @"onSpeechError", @"onSpeechEnd"];
+}
+
+- (void)startObserving {
+  _hasListeners = YES;
+}
+
+- (void)stopObserving {
+  _hasListeners = NO;
+}
+
+- (void)invalidate {
+  [super invalidate];
+  [_impl stopWithResolve:^(id result) {} reject:^(NSString *code, NSString *message, NSError *error) {}];
+}
+
 RCT_EXPORT_METHOD(start:(NSString *)language
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
-  [[SpeechToTextImpl shared] startWithLanguage:language
-                                       resolve:resolve
-                                        reject:reject];
+  [_impl startWithLanguage:language resolve:resolve reject:reject];
 }
 
 RCT_EXPORT_METHOD(stop:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
-  [[SpeechToTextImpl shared] stopWithResolve:resolve reject:reject];
+  [_impl stopWithResolve:resolve reject:reject];
 }
 
 RCT_EXPORT_METHOD(requestPermissions:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
-  [[SpeechToTextImpl shared] requestPermissionsWithResolve:resolve reject:reject];
+  [_impl requestPermissionsWithResolve:resolve reject:reject];
 }
 
 RCT_EXPORT_METHOD(isAvailable:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
-  [[SpeechToTextImpl shared] isAvailableWithResolve:resolve reject:reject];
+  [_impl isAvailableWithResolve:resolve reject:reject];
+}
+
+RCT_EXPORT_METHOD(addListener:(NSString *)eventName) {
+  [super addListener:eventName];
+}
+
+RCT_EXPORT_METHOD(removeListeners:(double)count) {
+  [super removeListeners:count];
 }
 
 @end

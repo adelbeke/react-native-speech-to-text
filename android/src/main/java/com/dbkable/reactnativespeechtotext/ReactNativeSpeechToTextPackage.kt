@@ -25,7 +25,7 @@ class ReactNativeSpeechToTextPackage : BaseReactPackage() {
         false,  // canOverrideExistingModule
         false,  // needsEagerInit
         false,  // isCxxModule
-        true // isTurboModule
+        false // isTurboModule
       )
       moduleInfos
     }

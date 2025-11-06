@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,6 +12,9 @@ import {
   stop,
   requestPermissions,
   isAvailable,
+  addSpeechResultListener,
+  addSpeechErrorListener,
+  addSpeechEndListener,
   type SpeechResult,
 } from '@dbkable/react-native-speech-to-text';
 
@@ -19,14 +22,58 @@ export default function App() {
   const [transcript, setTranscript] = useState<string>('');
   const [isListening, setIsListening] = useState(false);
   const [confidence, setConfidence] = useState<number>(0);
+  const [listenerStatus, setListenerStatus] = useState('Not attached');
+
+  useEffect(() => {
+    console.log('📌 Setting up listeners...');
+    setListenerStatus('Attaching...');
+
+    const resultListener = addSpeechResultListener((result: SpeechResult) => {
+      console.log('✅ RECEIVED Result:', result);
+
+      if (result.transcript) {
+        setTranscript(result.transcript);
+        setConfidence(result.confidence);
+      }
+    });
+
+    const errorListener = addSpeechErrorListener((error) => {
+      console.log('❌ RECEIVED Error:', error);
+      Alert.alert('Error', `${error.code}: ${error.message}`);
+      setIsListening(false);
+    });
+
+    const endListener = addSpeechEndListener(() => {
+      console.log('🏁 RECEIVED End');
+      setIsListening(false);
+    });
+
+    setListenerStatus('Attached ✅');
+    console.log('✅ Listeners attached');
+
+    return () => {
+      console.log('🧹 Cleaning up listeners...');
+      resultListener.remove();
+      errorListener.remove();
+      endListener.remove();
+      setListenerStatus('Removed');
+    };
+  }, []);
 
   const handleStart = async () => {
     try {
-      console.log('🔍 Checking availability...');
+      console.log('🎤 Starting...');
 
-      console.log('🔐 Requesting permissions...');
+      const available = await isAvailable();
+      console.log('Available:', available);
+
+      if (!available) {
+        Alert.alert('Error', 'Speech recognition not available');
+        return;
+      }
+
       const hasPermission = await requestPermissions();
-      console.log('Permission result:', hasPermission);
+      console.log('Permission:', hasPermission);
 
       if (!hasPermission) {
         Alert.alert(
@@ -36,37 +83,24 @@ export default function App() {
         return;
       }
 
-      console.log('✅ Checking if available...');
-      const available = await isAvailable();
-      console.log('Available:', available);
-
-      if (!available) {
-        Alert.alert('Error', 'Speech recognition not available on this device');
-        return;
-      }
-
-      console.log('🎤 Starting recognition...');
       await start({ language: 'en-US' });
       setIsListening(true);
       setTranscript('🎤 Listening...');
       setConfidence(0);
-      console.log('✅ Recording started!');
+      console.log('✅ Started recording');
     } catch (error) {
-      console.error('Start error:', error);
+      console.error('❌ Start error:', error);
       Alert.alert('Error', String(error));
     }
   };
 
   const handleStop = async () => {
     try {
-      const result: SpeechResult = await stop();
-      setTranscript(result.transcript || 'No text detected');
-      setConfidence(result.confidence);
-      setIsListening(false);
-
-      console.log('Result:', result);
+      console.log('⏹ Stopping...');
+      await stop();
+      console.log('✅ Stopped recording');
     } catch (error) {
-      console.error('Stop error:', error);
+      console.error('❌ Stop error:', error);
       Alert.alert('Error', String(error));
       setIsListening(false);
     }
@@ -76,6 +110,8 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Speech to Text</Text>
+
+        <Text style={styles.debug}>Listeners: {listenerStatus}</Text>
 
         <View style={styles.resultContainer}>
           <Text style={styles.label}>Transcription:</Text>
@@ -104,7 +140,9 @@ export default function App() {
         </TouchableOpacity>
 
         <Text style={styles.hint}>
-          {isListening ? 'Speak now...' : 'Language: English (en-US)'}
+          {isListening
+            ? 'Speak now... (real-time transcription)'
+            : 'Language: English (en-US)'}
         </Text>
       </View>
     </SafeAreaView>
@@ -125,8 +163,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 40,
+    marginBottom: 20,
     color: '#333',
+  },
+  debug: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 20,
   },
   resultContainer: {
     width: '100%',

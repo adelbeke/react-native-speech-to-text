@@ -1,5 +1,5 @@
-// ios/ReactNativeSpeechToText.h
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface ReactNativeSpeechToText : NSObject <RCTBridgeModule>
+@interface ReactNativeSpeechToText : RCTEventEmitter <RCTBridgeModule>
 @end

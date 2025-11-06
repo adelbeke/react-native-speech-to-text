@@ -19,8 +19,8 @@ A powerful, easy-to-use React Native library for real-time speech-to-text conver
 
 ## 📱 Demo
 
-| iOS | Android |
-| --- | ------- |
+| iOS                                                                                                       | Android                                                                                                   |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | <video src="https://github.com/user-attachments/assets/e48938ca-87a5-4343-ab76-cecc91b8380f" width="300"> | <video src="https://github.com/user-attachments/assets/2fbf41db-bf2d-4759-9181-0b8376a96dc1" width="300"> |
 
 ## 📦 Installation
@@ -163,9 +163,11 @@ await start({ language: 'en-US' });
 ```
 
 **Options:**
+
 - `language` (string, required): Language code (e.g., "en-US", "fr-FR", "es-ES", "de-DE")
 
 **Throws:**
+
 - `PERMISSION_DENIED`: User denied permissions
 - `NOT_AVAILABLE`: Speech recognition not available
 - `START_FAILED`: Failed to start recognition
@@ -195,6 +197,7 @@ const granted = await requestPermissions({
 ```
 
 **Options (Android only):**
+
 - `title` (string, optional): Dialog title
 - `message` (string, optional): Dialog message
 - `buttonNeutral` (string, optional): Neutral button text
@@ -238,6 +241,7 @@ listener.remove();
 ```
 
 **SpeechResult:**
+
 - `transcript` (string): The recognized text
 - `confidence` (number): Confidence score from 0.0 to 1.0
 - `isFinal` (boolean): `true` for final result, `false` for partial
@@ -258,6 +262,7 @@ listener.remove();
 ```
 
 **SpeechError:**
+
 - `code` (string): Error code (see [Error Codes](#error-codes))
 - `message` (string): Human-readable error message
 
@@ -341,10 +346,12 @@ Availability depends on the device and platform. Use `isAvailable()` to check.
 ### "Permission denied" error
 
 **iOS:**
+
 - Make sure you've added `NSSpeechRecognitionUsageDescription` and `NSMicrophoneUsageDescription` to your `Info.plist`
 - Check that the user granted permissions in Settings > Your App
 
 **Android:**
+
 - Ensure `RECORD_AUDIO` permission is in `AndroidManifest.xml`
 - Call `requestPermissions()` before `start()`
 
@@ -385,6 +392,7 @@ Availability depends on the device and platform. Use `isAvailable()` to check.
 ### Network errors
 
 Some speech recognition services require internet connectivity:
+
 - **iOS**: On-device recognition available on iOS 13+ for some languages
 - **Android**: Depends on the device's speech recognition provider
 

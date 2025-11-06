@@ -42,8 +42,6 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
     lastConfidence = 0.0
     isManuallyStopped = false
 
-    android.util.Log.d(NAME, "🎤 Starting recognition with language: $language")
-
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
       != PackageManager.PERMISSION_GRANTED) {
       promise.reject("PERMISSION_DENIED", "Microphone permission not granted")
@@ -70,19 +68,12 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
         }
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
-          override fun onReadyForSpeech(params: Bundle?) {
-            android.util.Log.d(NAME, "✅ Ready for speech")
-          }
-
-          override fun onBeginningOfSpeech() {
-            android.util.Log.d(NAME, "✅ Beginning of speech")
-          }
-
+          override fun onReadyForSpeech(params: Bundle?) {}
+          override fun onBeginningOfSpeech() {}
           override fun onRmsChanged(rmsdB: Float) {}
           override fun onBufferReceived(buffer: ByteArray?) {}
 
           override fun onEndOfSpeech() {
-            android.util.Log.d(NAME, "🏁 End of speech")
             if (!isManuallyStopped) {
               val event = Arguments.createMap()
               sendEvent("onSpeechEnd", event)
@@ -90,12 +81,21 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
           }
 
           override fun onError(error: Int) {
-            android.util.Log.d(NAME, "❌ Error: $error")
             if (!isManuallyStopped) {
               if (error == SpeechRecognizer.ERROR_NO_MATCH ||
                 error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                android.util.Log.d(NAME, "Ignoring error: $error (normal stop)")
                 return
+              }
+
+              val errorCode = when (error) {
+                SpeechRecognizer.ERROR_AUDIO -> "AUDIO_ERROR"
+                SpeechRecognizer.ERROR_CLIENT -> "CLIENT_ERROR"
+                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "PERMISSION_DENIED"
+                SpeechRecognizer.ERROR_NETWORK -> "NETWORK_ERROR"
+                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "NETWORK_TIMEOUT"
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "RECOGNIZER_BUSY"
+                SpeechRecognizer.ERROR_SERVER -> "SERVER_ERROR"
+                else -> "UNKNOWN_ERROR"
               }
 
               val errorMessage = when (error) {
@@ -110,24 +110,20 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
               }
 
               val event = Arguments.createMap()
-              event.putString("error", errorMessage)
+              event.putString("code", errorCode)
+              event.putString("message", errorMessage)
               sendEvent("onSpeechError", event)
             }
           }
 
           override fun onResults(results: Bundle?) {
-            android.util.Log.d(NAME, "🎯 Final results received")
             results?.let {
               val matches = it.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-              android.util.Log.d(NAME, "Final matches: $matches")
-
               val scores = it.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
 
               if (matches != null && matches.isNotEmpty()) {
                 lastTranscript = matches[0]
                 lastConfidence = scores?.get(0)?.toDouble() ?: 0.0
-
-                android.util.Log.d(NAME, "Sending final: $lastTranscript")
 
                 val event = Arguments.createMap()
                 event.putString("transcript", lastTranscript)
@@ -139,18 +135,13 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
           }
 
           override fun onPartialResults(partialResults: Bundle?) {
-            android.util.Log.d(NAME, "📝 Partial results received")
             partialResults?.let {
               val matches = it.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-              android.util.Log.d(NAME, "Partial matches: $matches")
-
               val scores = it.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
 
               if (matches != null && matches.isNotEmpty()) {
                 lastTranscript = matches[0]
                 lastConfidence = scores?.get(0)?.toDouble() ?: 0.0
-
-                android.util.Log.d(NAME, "Sending partial: $lastTranscript")
 
                 val event = Arguments.createMap()
                 event.putString("transcript", lastTranscript)
@@ -165,11 +156,9 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
         })
 
         speechRecognizer?.startListening(intent)
-        android.util.Log.d(NAME, "🎙️ Started listening")
         promise.resolve(null)
 
       } catch (e: Exception) {
-        android.util.Log.e(NAME, "❌ Start failed: ${e.message}")
         promise.reject("START_FAILED", "Failed to start recognition: ${e.message}", e)
       }
     }
@@ -177,13 +166,11 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun stop(promise: Promise) {
-    android.util.Log.d(NAME, "⏹ Stopping recognition")
     isManuallyStopped = true
 
     android.os.Handler(android.os.Looper.getMainLooper()).post {
       try {
         if (lastTranscript.isNotEmpty()) {
-          android.util.Log.d(NAME, "Sending final on stop: $lastTranscript")
           val event = Arguments.createMap()
           event.putString("transcript", lastTranscript)
           event.putBoolean("isFinal", true)
@@ -198,10 +185,8 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
         val endEvent = Arguments.createMap()
         sendEvent("onSpeechEnd", endEvent)
 
-        android.util.Log.d(NAME, "✅ Stopped successfully")
         promise.resolve(null)
       } catch (e: Exception) {
-        android.util.Log.e(NAME, "❌ Stop failed: ${e.message}")
         promise.reject("STOP_FAILED", "Failed to stop recognition: ${e.message}", e)
       }
     }

@@ -27,7 +27,7 @@ const SpeechToTextModule: Spec = NativeSpeechToText
 
 interface SpeechToTextEvents {
   onSpeechResult: SpeechResult;
-  onSpeechError: { error: string };
+  onSpeechError: SpeechError;
   onSpeechEnd: void;
 }
 
@@ -46,6 +46,26 @@ export interface SpeechResult {
   transcript: string;
   confidence: number;
   isFinal: boolean;
+}
+
+export enum SpeechErrorCode {
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  NOT_AVAILABLE = 'NOT_AVAILABLE',
+  REQUEST_FAILED = 'REQUEST_FAILED',
+  START_FAILED = 'START_FAILED',
+  STOP_FAILED = 'STOP_FAILED',
+  AUDIO_ERROR = 'AUDIO_ERROR',
+  CLIENT_ERROR = 'CLIENT_ERROR',
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  NETWORK_TIMEOUT = 'NETWORK_TIMEOUT',
+  RECOGNIZER_BUSY = 'RECOGNIZER_BUSY',
+  SERVER_ERROR = 'SERVER_ERROR',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+}
+
+export interface SpeechError {
+  code: SpeechErrorCode | string;
+  message: string;
 }
 
 export interface SpeechToTextOptions {
@@ -107,7 +127,7 @@ export function addSpeechResultListener(
 }
 
 export function addSpeechErrorListener(
-  callback: (error: { error: string }) => void
+  callback: (error: SpeechError) => void
 ): EmitterSubscription {
   return eventEmitter.addListener('onSpeechError', callback);
 }

@@ -44,6 +44,11 @@ RCT_EXPORT_MODULE(ReactNativeSpeechToText)
   _hasListeners = NO;
 }
 
+- (void)invalidate {
+  [super invalidate];
+  [_impl stopWithResolve:^(id result) {} reject:^(NSString *code, NSString *message, NSError *error) {}];
+}
+
 RCT_EXPORT_METHOD(start:(NSString *)language
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {

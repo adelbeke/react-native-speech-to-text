@@ -38,8 +38,8 @@ export default function App() {
     });
 
     const errorListener = addSpeechErrorListener((error) => {
-      console.log('❌ RECEIVED Error:', error.error);
-      Alert.alert('Error', error.error);
+      console.log('❌ RECEIVED Error:', error);
+      Alert.alert('Error', `${error.code}: ${error.message}`);
       setIsListening(false);
     });
 

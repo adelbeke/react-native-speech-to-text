@@ -100,8 +100,11 @@ public class SpeechToTextImpl: NSObject {
 
         if let error = error {
           if !self.isManuallyStopped {
+            let errorCode = self.mapErrorCode(from: error)
+            let errorMessage = self.mapErrorMessage(from: error)
             self.sendEvent(name: "onSpeechError", body: [
-              "error": error.localizedDescription
+              "code": errorCode,
+              "message": errorMessage
             ])
           }
           return
@@ -121,7 +124,7 @@ public class SpeechToTextImpl: NSObject {
             "confidence": confidence
           ])
 
-          if isFinal {
+          if isFinal && !self.isManuallyStopped {
             self.stopRecognition()
             self.sendEvent(name: "onSpeechEnd", body: [:])
           }
@@ -168,6 +171,46 @@ public class SpeechToTextImpl: NSObject {
       return 0.0
     }
     return Double(segment.confidence)
+  }
+
+  private func mapErrorCode(from error: Error) -> String {
+    let nsError = error as NSError
+
+    if nsError.domain == "kLSRErrorDomain" {
+      switch nsError.code {
+      case 1: return "PERMISSION_DENIED"
+      case 2: return "NOT_AVAILABLE"
+      case 4: return "NETWORK_ERROR"
+      case 7: return "RECOGNIZER_BUSY"
+      default: return "UNKNOWN_ERROR"
+      }
+    }
+
+    if nsError.domain == NSOSStatusErrorDomain || nsError.domain == AVFoundationErrorDomain {
+      return "AUDIO_ERROR"
+    }
+
+    return "UNKNOWN_ERROR"
+  }
+
+  private func mapErrorMessage(from error: Error) -> String {
+    let nsError = error as NSError
+
+    if nsError.domain == "kLSRErrorDomain" {
+      switch nsError.code {
+      case 1: return "Insufficient permissions"
+      case 2: return "Speech recognizer not available"
+      case 4: return "Network error"
+      case 7: return "Recognizer busy"
+      default: return "Unknown error"
+      }
+    }
+
+    if nsError.domain == NSOSStatusErrorDomain || nsError.domain == AVFoundationErrorDomain {
+      return "Audio recording error"
+    }
+
+    return "Unknown error"
   }
 
   private func sendEvent(name: String, body: [String: Any]) {

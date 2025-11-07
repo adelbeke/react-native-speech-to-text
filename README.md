@@ -43,9 +43,7 @@ Add the plugin to your `app.json` or `app.config.js`:
 ```json
 {
   "expo": {
-    "plugins": [
-      "@dbkable/react-native-speech-to-text"
-    ]
+    "plugins": ["@dbkable/react-native-speech-to-text"]
   }
 }
 ```
@@ -397,14 +395,15 @@ If you're using Expo, the plugin automatically configures native permissions for
 
 ### Plugin Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `microphonePermission` | string | `"Allow $(PRODUCT_NAME) to access your microphone to record audio for speech recognition"` | iOS only: Custom message for `NSMicrophoneUsageDescription` |
-| `speechRecognitionPermission` | string | `"Allow $(PRODUCT_NAME) to use speech recognition to convert your voice to text"` | iOS only: Custom message for `NSSpeechRecognitionUsageDescription` |
+| Option                        | Type   | Default                                                                                    | Description                                                        |
+| ----------------------------- | ------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `microphonePermission`        | string | `"Allow $(PRODUCT_NAME) to access your microphone to record audio for speech recognition"` | iOS only: Custom message for `NSMicrophoneUsageDescription`        |
+| `speechRecognitionPermission` | string | `"Allow $(PRODUCT_NAME) to use speech recognition to convert your voice to text"`          | iOS only: Custom message for `NSSpeechRecognitionUsageDescription` |
 
 ### What the Plugin Does
 
 The Expo Config Plugin automatically:
+
 - **iOS**: Adds `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` to `Info.plist`
 - **Android**: Adds `RECORD_AUDIO` permission to `AndroidManifest.xml`
 

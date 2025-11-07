@@ -35,9 +35,7 @@
     "build": "expo-module build",
     "build:plugin": "expo-module build plugin",
     "prepare": "bob build && expo-module build plugin",
-    "release-patch": "release-it --increment patch",
-    "release-minor": "release-it --increment minor",
-    "release-major": "release-it --increment major"
+    "release": "release-it --only-version"
   },
   "keywords": [
     "react-native",

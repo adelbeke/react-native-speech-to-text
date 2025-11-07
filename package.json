@@ -2,16 +2,9 @@
   "name": "@dbkable/react-native-speech-to-text",
   "version": "1.0.0",
   "description": "Cross-platform speech recognition library for React Native using native APIs (Speech Framework & SpeechRecognizer)",
-  "main": "./lib/module/index.js",
-  "types": "./lib/typescript/src/index.d.ts",
-  "exports": {
-    ".": {
-      "source": "./src/index.tsx",
-      "types": "./lib/typescript/src/index.d.ts",
-      "default": "./lib/module/index.js"
-    },
-    "./package.json": "./package.json"
-  },
+  "main": "lib/module/index.js",
+  "types": "lib/typescript/src/index.d.ts",
+  "react-native": "src/index.tsx",
   "files": [
     "src",
     "lib",

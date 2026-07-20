@@ -1,9 +1,14 @@
 package com.dbkable.reactnativespeechtotext
 
 import android.Manifest
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -53,9 +58,14 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
       return
     }
 
+    if (isAirplaneModeEnabled(context) && isRecognizerOffline(context)) {
+      promise.reject("NETWORK_ERROR", "Network error")
+      return
+    }
+
     android.os.Handler(android.os.Looper.getMainLooper()).post {
       try {
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+        speechRecognizer = createPreferredSpeechRecognizer(context)
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
           putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -70,7 +80,12 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
           override fun onReadyForSpeech(params: Bundle?) {}
           override fun onBeginningOfSpeech() {}
-          override fun onRmsChanged(rmsdB: Float) {}
+          override fun onRmsChanged(rmsdB: Float) {
+            val level = ((rmsdB + 2f) / 14f).coerceIn(0f, 1f)
+            val event = Arguments.createMap()
+            event.putDouble("level", level.toDouble())
+            sendEvent("audioMeterUpdate", event)
+          }
           override fun onBufferReceived(buffer: ByteArray?) {}
 
           override fun onEndOfSpeech() {
@@ -87,6 +102,8 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
                 return
               }
 
+              val isOffline = isRecognizerOffline(context)
+
               val errorCode = when (error) {
                 SpeechRecognizer.ERROR_AUDIO -> "AUDIO_ERROR"
                 SpeechRecognizer.ERROR_CLIENT -> "CLIENT_ERROR"
@@ -94,8 +111,14 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
                 SpeechRecognizer.ERROR_NETWORK -> "NETWORK_ERROR"
                 SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "NETWORK_TIMEOUT"
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "RECOGNIZER_BUSY"
-                SpeechRecognizer.ERROR_SERVER -> "SERVER_ERROR"
-                else -> "UNKNOWN_ERROR"
+                SpeechRecognizer.ERROR_SERVER -> if (isOffline) "NETWORK_ERROR" else "SERVER_ERROR"
+                SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> "NETWORK_ERROR"
+                SpeechRecognizer.ERROR_TOO_MANY_REQUESTS -> if (isOffline) "NETWORK_ERROR" else "REQUEST_FAILED"
+                SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
+                SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
+                SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT,
+                SpeechRecognizer.ERROR_CANNOT_LISTEN_TO_DOWNLOAD_EVENTS -> "NOT_AVAILABLE"
+                else -> if (isOffline) "NETWORK_ERROR" else "UNKNOWN_ERROR"
               }
 
               val errorMessage = when (error) {
@@ -105,8 +128,14 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
                 SpeechRecognizer.ERROR_NETWORK -> "Network error"
                 SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognizer busy"
-                SpeechRecognizer.ERROR_SERVER -> "Server error"
-                else -> "Unknown error"
+                SpeechRecognizer.ERROR_SERVER -> if (isOffline) "Network error" else "Server error"
+                SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> "Speech service disconnected"
+                SpeechRecognizer.ERROR_TOO_MANY_REQUESTS -> if (isOffline) "Network error" else "Too many requests"
+                SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED -> "Language not supported"
+                SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE -> "Language unavailable"
+                SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT -> "Cannot check language support"
+                SpeechRecognizer.ERROR_CANNOT_LISTEN_TO_DOWNLOAD_EVENTS -> "Cannot listen to language download events"
+                else -> if (isOffline) "Network error" else "Unknown error"
               }
 
               val event = Arguments.createMap()
@@ -222,6 +251,36 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
       speechRecognizer?.destroy()
       speechRecognizer = null
     }
+  }
+
+  private fun createPreferredSpeechRecognizer(context: Context): SpeechRecognizer {
+    val preferredPackages = listOf(
+      "com.google.android.tts",
+      "com.google.android.googlequicksearchbox",
+    )
+    val pm = context.packageManager
+    for (pkg in preferredPackages) {
+      val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).setPackage(pkg)
+      val services = pm.queryIntentServices(intent, 0)
+      if (services.isNotEmpty()) {
+        val info = services[0].serviceInfo
+        return SpeechRecognizer.createSpeechRecognizer(context, ComponentName(info.packageName, info.name))
+      }
+    }
+    return SpeechRecognizer.createSpeechRecognizer(context)
+  }
+
+  private fun isRecognizerOffline(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+      ?: return false
+    val network = connectivityManager.activeNetwork ?: return true
+    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return true
+    return !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
+      !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+  }
+
+  private fun isAirplaneModeEnabled(context: Context): Boolean {
+    return Settings.Global.getInt(context.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0) == 1
   }
 
   companion object {

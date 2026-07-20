@@ -14,6 +14,7 @@ public class SpeechToTextImpl: NSObject {
   private var lastTranscript: String = ""
   private var lastConfidence: Double = 0.0
   private var isManuallyStopped: Bool = false
+  private var savedAudioSession: (category: AVAudioSession.Category, mode: AVAudioSession.Mode)?
 
   @objc public init(eventEmitter: RCTEventEmitter) {
     self.eventEmitter = eventEmitter
@@ -74,6 +75,7 @@ public class SpeechToTextImpl: NSObject {
 
     do {
       let audioSession = AVAudioSession.sharedInstance()
+      savedAudioSession = (audioSession.category, audioSession.mode)
       try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
       try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
@@ -88,8 +90,18 @@ public class SpeechToTextImpl: NSObject {
       let inputNode = audioEngine.inputNode
       let recordingFormat = inputNode.outputFormat(forBus: 0)
 
-      inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+      guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else { return }
+
+      inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
         recognitionRequest.append(buffer)
+        guard let channelData = buffer.floatChannelData?[0] else { return }
+        let frameLength = Int(buffer.frameLength)
+        guard frameLength > 0 else { return }
+        var sum: Float = 0
+        for i in 0..<frameLength { sum += channelData[i] * channelData[i] }
+        let rms = (sum / Float(frameLength)).squareRoot()
+        let level = Double(min(1.0, max(0.0, 1.0 + log10(max(Double(rms), 1e-7)) / 4.0)))
+        self?.sendEvent(name: "audioMeterUpdate", body: ["level": level])
       }
 
       audioEngine.prepare()
@@ -164,6 +176,10 @@ public class SpeechToTextImpl: NSObject {
     recognitionTask?.cancel()
     recognitionRequest = nil
     recognitionTask = nil
+    if let saved = savedAudioSession {
+      try? AVAudioSession.sharedInstance().setCategory(saved.category, mode: saved.mode)
+    }
+    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
 
   private func getConfidence(from result: SFSpeechRecognitionResult) -> Double {

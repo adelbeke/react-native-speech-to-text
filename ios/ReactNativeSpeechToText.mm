@@ -33,7 +33,7 @@ RCT_EXPORT_MODULE(ReactNativeSpeechToText)
 }
 
 - (NSArray<NSString *> *)supportedEvents {
-  return @[@"onSpeechResult", @"onSpeechError", @"onSpeechEnd"];
+  return @[@"onSpeechResult", @"onSpeechError", @"onSpeechEnd", @"audioMeterUpdate"];
 }
 
 - (void)startObserving {

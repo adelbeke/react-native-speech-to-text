@@ -15,6 +15,7 @@ import {
   addSpeechResultListener,
   addSpeechErrorListener,
   addSpeechEndListener,
+  addAudioMeterUpdateListener,
   type SpeechResult,
 } from '@dbkable/react-native-speech-to-text';
 
@@ -22,6 +23,7 @@ export default function App() {
   const [transcript, setTranscript] = useState<string>('');
   const [isListening, setIsListening] = useState(false);
   const [confidence, setConfidence] = useState<number>(0);
+  const [meterLevel, setMeterLevel] = useState<number>(0);
   const [listenerStatus, setListenerStatus] = useState('Not attached');
 
   useEffect(() => {
@@ -46,6 +48,11 @@ export default function App() {
     const endListener = addSpeechEndListener(() => {
       console.log('🏁 RECEIVED End');
       setIsListening(false);
+      setMeterLevel(0);
+    });
+
+    const meterListener = addAudioMeterUpdateListener((update) => {
+      setMeterLevel(update.level);
     });
 
     setListenerStatus('Attached ✅');
@@ -56,6 +63,7 @@ export default function App() {
       resultListener.remove();
       errorListener.remove();
       endListener.remove();
+      meterListener.remove();
       setListenerStatus('Removed');
     };
   }, []);
@@ -87,6 +95,7 @@ export default function App() {
       setIsListening(true);
       setTranscript('🎤 Listening...');
       setConfidence(0);
+      setMeterLevel(0);
       console.log('✅ Started recording');
     } catch (error) {
       console.error('❌ Start error:', error);
@@ -123,6 +132,17 @@ export default function App() {
             <Text style={styles.confidence}>
               Confidence: {(confidence * 100).toFixed(0)}%
             </Text>
+          )}
+
+          {isListening && (
+            <View style={styles.meterContainer}>
+              <View
+                style={[
+                  styles.meterFill,
+                  { width: `${Math.round(meterLevel * 100)}%` },
+                ]}
+              />
+            </View>
           )}
         </View>
 
@@ -200,6 +220,18 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     marginTop: 10,
     fontWeight: '600',
+  },
+  meterContainer: {
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    marginTop: 12,
+    overflow: 'hidden',
+  },
+  meterFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 4,
   },
   button: {
     paddingHorizontal: 40,

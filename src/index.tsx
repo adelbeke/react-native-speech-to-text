@@ -29,6 +29,7 @@ interface SpeechToTextEvents {
   onSpeechResult: SpeechResult;
   onSpeechError: SpeechError;
   onSpeechEnd: void;
+  audioMeterUpdate: AudioMeterUpdate;
 }
 
 type TypedEventEmitter = {
@@ -66,6 +67,10 @@ export enum SpeechErrorCode {
 export interface SpeechError {
   code: SpeechErrorCode | string;
   message: string;
+}
+
+export interface AudioMeterUpdate {
+  level: number;
 }
 
 export interface SpeechToTextOptions {
@@ -136,4 +141,10 @@ export function addSpeechEndListener(
   callback: () => void
 ): EmitterSubscription {
   return eventEmitter.addListener('onSpeechEnd', callback);
+}
+
+export function addAudioMeterUpdateListener(
+  callback: (update: AudioMeterUpdate) => void
+): EmitterSubscription {
+  return eventEmitter.addListener('audioMeterUpdate', callback);
 }

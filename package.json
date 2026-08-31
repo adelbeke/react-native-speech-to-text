@@ -127,12 +127,10 @@
     },
     "npm": {
       "publish": true,
-      "tag": "next",
       "access": "public"
     },
     "github": {
-      "release": true,
-      "prerelease": true
+      "release": true
     },
     "plugins": {
       "@release-it/conventional-changelog": {

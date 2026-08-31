@@ -127,7 +127,8 @@
     },
     "npm": {
       "publish": true,
-      "access": "public"
+      "access": "public",
+      "skipChecks": true
     },
     "github": {
       "release": true

@@ -5,7 +5,7 @@ import {
   PermissionsAndroid,
   type EmitterSubscription,
 } from 'react-native';
-import NativeSpeechToText, { type Spec } from './ReactNativeSpeechToText';
+import NativeSpeechToText, { type Spec } from './NativeReactNativeSpeechToText';
 
 const LINKING_ERROR =
   `The package '@dkable/react-native-speech-to-text' doesn't seem to be linked. Make sure: \n\n` +

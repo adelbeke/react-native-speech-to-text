@@ -15,22 +15,17 @@ import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
 
 class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
-  ReactContextBaseJavaModule(reactContext) {
+  NativeReactNativeSpeechToTextSpec(reactContext) {
 
   private var speechRecognizer: SpeechRecognizer? = null
   private var lastTranscript: String = ""
   private var lastConfidence: Double = 0.0
   private var isManuallyStopped: Boolean = false
-
-  override fun getName(): String {
-    return NAME
-  }
 
   private fun sendEvent(eventName: String, params: WritableMap?) {
     reactApplicationContext
@@ -39,7 +34,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun start(language: String, promise: Promise) {
+  override fun start(language: String, promise: Promise) {
     val context = reactApplicationContext
 
     lastTranscript = ""
@@ -193,7 +188,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun stop(promise: Promise) {
+  override fun stop(promise: Promise) {
     isManuallyStopped = true
 
     android.os.Handler(android.os.Looper.getMainLooper()).post {
@@ -221,7 +216,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun requestPermissions(promise: Promise) {
+  override fun requestPermissions(promise: Promise) {
     val context = reactApplicationContext
     val hasPermission = ContextCompat.checkSelfPermission(
       context,
@@ -232,17 +227,17 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun isAvailable(promise: Promise) {
+  override fun isAvailable(promise: Promise) {
     val context = reactApplicationContext
     val available = SpeechRecognizer.isRecognitionAvailable(context)
     promise.resolve(available)
   }
 
   @ReactMethod
-  fun addListener(eventName: String) {}
+  override fun addListener(eventName: String) {}
 
   @ReactMethod
-  fun removeListeners(count: Int) {}
+  override fun removeListeners(count: Double) {}
 
   override fun invalidate() {
     super.invalidate()

@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -28,6 +30,9 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
   private var isManuallyStopped: Boolean = false
   private var isContinuous: Boolean = false
   private var committedTranscript: String = ""
+  private val mainHandler = Handler(Looper.getMainLooper())
+  private val finalResultWait = FinalResultWait<Promise>()
+  private var finalResultTimeout: Runnable? = null
 
   private fun sendEvent(eventName: String, params: WritableMap?) {
     reactApplicationContext
@@ -63,6 +68,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
 
     android.os.Handler(android.os.Looper.getMainLooper()).post {
       try {
+        completeStop()
         destroyRecognizer()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
 
@@ -93,6 +99,11 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
           override fun onEndOfSpeech() {}
 
           override fun onError(error: Int) {
+            if (finalResultWait.isWaiting) {
+              completeStop()
+              return
+            }
+
             if (!isManuallyStopped) {
               if (error == SpeechRecognizer.ERROR_NO_MATCH ||
                 error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
@@ -162,6 +173,11 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
               }
             }
 
+            if (finalResultWait.isWaiting) {
+              completeStop()
+              return
+            }
+
             if (isManuallyStopped) return
 
             if (lastTranscript.isNotEmpty()) {
@@ -214,29 +230,53 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
 
   @ReactMethod
   override fun stop(promise: Promise) {
-    isManuallyStopped = true
-
-    android.os.Handler(android.os.Looper.getMainLooper()).post {
+    mainHandler.post {
+      isManuallyStopped = true
       try {
-        if (lastTranscript.isNotEmpty()) {
-          val event = Arguments.createMap()
-          event.putString("transcript", lastTranscript)
-          event.putBoolean("isFinal", true)
-          event.putDouble("confidence", lastConfidence)
-          sendEvent("onSpeechResult", event)
+        val recognizer = speechRecognizer
+        if (recognizer == null && !finalResultWait.isWaiting) {
+          sendFinalResultAndEnd()
+          promise.resolve(null)
+          return@post
         }
 
-        speechRecognizer?.stopListening()
-        destroyRecognizer()
+        if (!finalResultWait.begin(promise)) return@post
 
-        val endEvent = Arguments.createMap()
-        sendEvent("onSpeechEnd", endEvent)
-
-        promise.resolve(null)
+        val timeout = Runnable { completeStop() }
+        finalResultTimeout = timeout
+        mainHandler.postDelayed(timeout, FINAL_RESULT_TIMEOUT_MS)
+        recognizer?.stopListening()
       } catch (e: Exception) {
-        promise.reject("STOP_FAILED", "Failed to stop recognition: ${e.message}", e)
+        val pendingStops = finalResultWait.finish() ?: listOf(promise)
+        cancelFinalResultTimeout()
+        destroyRecognizer()
+        pendingStops.forEach { it.reject("STOP_FAILED", "Failed to stop recognition: ${e.message}", e) }
       }
     }
+  }
+
+  private fun completeStop() {
+    val pendingStops = finalResultWait.finish() ?: return
+    cancelFinalResultTimeout()
+    sendFinalResultAndEnd()
+    destroyRecognizer()
+    pendingStops.forEach { it.resolve(null) }
+  }
+
+  private fun cancelFinalResultTimeout() {
+    finalResultTimeout?.let { mainHandler.removeCallbacks(it) }
+    finalResultTimeout = null
+  }
+
+  private fun sendFinalResultAndEnd() {
+    if (lastTranscript.isNotEmpty()) {
+      val event = Arguments.createMap()
+      event.putString("transcript", lastTranscript)
+      event.putBoolean("isFinal", true)
+      event.putDouble("confidence", lastConfidence)
+      sendEvent("onSpeechResult", event)
+    }
+    sendEvent("onSpeechEnd", Arguments.createMap())
   }
 
   @ReactMethod
@@ -271,7 +311,10 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
 
   override fun invalidate() {
     super.invalidate()
-    android.os.Handler(android.os.Looper.getMainLooper()).post { destroyRecognizer() }
+    mainHandler.post {
+      cancelFinalResultTimeout()
+      destroyRecognizer()
+    }
   }
 
   private fun destroyRecognizer() {
@@ -309,5 +352,6 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
 
   companion object {
     const val NAME = "ReactNativeSpeechToText"
+    private const val FINAL_RESULT_TIMEOUT_MS = 1000L
   }
 }

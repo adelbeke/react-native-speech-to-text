@@ -3,6 +3,7 @@
 @interface SpeechToTextImpl : NSObject
 - (instancetype)initWithEventEmitter:(RCTEventEmitter *)emitter;
 - (void)startWithLanguage:(NSString *)language
+                 onDevice:(BOOL)onDevice
                   resolve:(RCTPromiseResolveBlock)resolve
                    reject:(RCTPromiseRejectBlock)reject;
 - (void)stopWithResolve:(RCTPromiseResolveBlock)resolve
@@ -11,6 +12,9 @@
                                reject:(RCTPromiseRejectBlock)reject;
 - (void)isAvailableWithResolve:(RCTPromiseResolveBlock)resolve
                         reject:(RCTPromiseRejectBlock)reject;
+- (void)isOnDeviceAvailableWithLanguage:(NSString *)language
+                                resolve:(RCTPromiseResolveBlock)resolve
+                                 reject:(RCTPromiseRejectBlock)reject;
 @end
 
 @implementation ReactNativeSpeechToText {
@@ -50,9 +54,10 @@ RCT_EXPORT_MODULE(ReactNativeSpeechToText)
 }
 
 RCT_EXPORT_METHOD(start:(NSString *)language
+                  onDevice:(BOOL)onDevice
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
-  [_impl startWithLanguage:language resolve:resolve reject:reject];
+  [_impl startWithLanguage:language onDevice:onDevice resolve:resolve reject:reject];
 }
 
 RCT_EXPORT_METHOD(stop:(RCTPromiseResolveBlock)resolve
@@ -68,6 +73,12 @@ RCT_EXPORT_METHOD(requestPermissions:(RCTPromiseResolveBlock)resolve
 RCT_EXPORT_METHOD(isAvailable:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
   [_impl isAvailableWithResolve:resolve reject:reject];
+}
+
+RCT_EXPORT_METHOD(isOnDeviceAvailable:(NSString *)language
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
+  [_impl isOnDeviceAvailableWithLanguage:language resolve:resolve reject:reject];
 }
 
 RCT_EXPORT_METHOD(addListener:(NSString *)eventName) {

@@ -202,6 +202,9 @@ await start({ language: 'en-US' });
 **Options:**
 
 - `language` (string, required): Language code (e.g., "en-US", "fr-FR", "es-ES", "de-DE")
+- `onDevice` (boolean, optional, default `false`, iOS only): Keep recognition on the device, so it works offline. If the device does not support on-device recognition for `language`, recognition falls back to Apple's servers. Use `isOnDeviceAvailable()` to know which mode will run. Ignored on Android.
+
+> **iOS server limit:** without on-device recognition, iOS sends audio to Apple's servers, which needs a network connection and stops each recognition session after about one minute.
 
 **Throws:**
 
@@ -257,6 +260,19 @@ if (!available) {
 ```
 
 **Returns:** `boolean`
+
+---
+
+#### `isOnDeviceAvailable(language: string): Promise<boolean>`
+
+Checks if the device can recognize `language` without a network connection, which is what `start({ language, onDevice: true })` needs to stay on the device.
+
+```typescript
+const offline = await isOnDeviceAvailable('fr-FR');
+await start({ language: 'fr-FR', onDevice: true });
+```
+
+**Returns:** `boolean` - always `false` on Android, where `onDevice` is not supported
 
 ---
 
@@ -324,6 +340,7 @@ listener.remove();
 ```typescript
 interface SpeechToTextOptions {
   language: string; // e.g., "en-US", "fr-FR", "es-ES"
+  onDevice?: boolean; // iOS only, default false
 }
 
 interface PermissionOptions {
@@ -484,7 +501,7 @@ Availability depends on the device and platform. Use `isAvailable()` to check.
 
 Some speech recognition services require internet connectivity:
 
-- **iOS**: On-device recognition available on iOS 13+ for some languages
+- **iOS**: Pass `onDevice: true` to `start()` to recognize offline when `isOnDeviceAvailable()` returns `true` (iOS 13+, some languages)
 - **Android**: Depends on the device's speech recognition provider
 
 Ensure the device has internet access for best results.

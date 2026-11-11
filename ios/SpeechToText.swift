@@ -51,8 +51,18 @@ public class SpeechToTextImpl: NSObject {
     resolve(available)
   }
 
+  @objc public func isOnDeviceAvailable(
+  language: String,
+  resolve: @escaping RCTPromiseResolveBlock,
+  reject: @escaping RCTPromiseRejectBlock
+  ) {
+    let recognizer = SFSpeechRecognizer(locale: Locale(identifier: language))
+    resolve(recognizer?.supportsOnDeviceRecognition ?? false)
+  }
+
   @objc public func start(
   language: String,
+  onDevice: Bool,
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
   ) {
@@ -86,6 +96,9 @@ public class SpeechToTextImpl: NSObject {
       }
 
       recognitionRequest.shouldReportPartialResults = true
+      if onDevice && speechRecognizer.supportsOnDeviceRecognition {
+        recognitionRequest.requiresOnDeviceRecognition = true
+      }
 
       let inputNode = audioEngine.inputNode
       let recordingFormat = inputNode.outputFormat(forBus: 0)

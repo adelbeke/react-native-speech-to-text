@@ -115,7 +115,8 @@ public class SpeechToTextImpl: NSObject {
       }
 
       let inputNode = audioEngine.inputNode
-      let recordingFormat = inputNode.outputFormat(forBus: 0)
+      // installTap raises an uncatchable ObjC exception when the tap format differs from the hardware input format.
+      let recordingFormat = inputNode.inputFormat(forBus: 0)
 
       guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
         reject("AUDIO_ERROR", "Invalid audio input format", nil)

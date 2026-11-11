@@ -119,6 +119,7 @@ public class SpeechToTextImpl: NSObject {
       let recordingFormat = inputNode.inputFormat(forBus: 0)
 
       guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
+        stopRecognition()
         reject("AUDIO_ERROR", "Invalid audio input format", nil)
         return
       }
@@ -185,6 +186,7 @@ public class SpeechToTextImpl: NSObject {
       resolve(nil)
 
     } catch {
+      stopRecognition()
       reject("START_FAILED", "Failed to start recognition: \(error.localizedDescription)", error)
     }
   }

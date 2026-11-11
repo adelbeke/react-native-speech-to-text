@@ -63,6 +63,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
 
     android.os.Handler(android.os.Looper.getMainLooper()).post {
       try {
+        destroyRecognizer()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -95,9 +96,16 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
             if (!isManuallyStopped) {
               if (error == SpeechRecognizer.ERROR_NO_MATCH ||
                 error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                if (isContinuous) listenAgain(intent)
+                if (isContinuous) {
+                  listenAgain(intent)
+                } else {
+                  destroyRecognizer()
+                  sendEvent("onSpeechEnd", Arguments.createMap())
+                }
                 return
               }
+
+              destroyRecognizer()
 
               val isOffline = isRecognizerOffline(context)
 
@@ -168,6 +176,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
               committedTranscript = lastTranscript
               listenAgain(intent)
             } else {
+              destroyRecognizer()
               sendEvent("onSpeechEnd", Arguments.createMap())
             }
           }
@@ -217,8 +226,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
         }
 
         speechRecognizer?.stopListening()
-        speechRecognizer?.destroy()
-        speechRecognizer = null
+        destroyRecognizer()
 
         val endEvent = Arguments.createMap()
         sendEvent("onSpeechEnd", endEvent)
@@ -262,10 +270,12 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
 
   override fun invalidate() {
     super.invalidate()
-    android.os.Handler(android.os.Looper.getMainLooper()).post {
-      speechRecognizer?.destroy()
-      speechRecognizer = null
-    }
+    android.os.Handler(android.os.Looper.getMainLooper()).post { destroyRecognizer() }
+  }
+
+  private fun destroyRecognizer() {
+    speechRecognizer?.destroy()
+    speechRecognizer = null
   }
 
   private fun withCommitted(rawSegment: String): String {

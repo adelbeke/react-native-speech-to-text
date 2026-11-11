@@ -38,6 +38,8 @@ yarn add @dbkable/react-native-speech-to-text
 
 ### For Expo Projects
 
+Supported Expo SDKs: 54 and later (tested on 54 and 58). Expo Go is not supported: use a [development build](https://docs.expo.dev/develop/development-builds/introduction/).
+
 Add the plugin to your `app.json` or `app.config.js`:
 
 ```json
@@ -422,7 +424,7 @@ If you're using Expo, the plugin automatically configures native permissions for
 
 The Expo Config Plugin automatically:
 
-- **iOS**: Adds `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` to `Info.plist`
+- **iOS**: Adds `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` to `Info.plist`. A value you already set in `ios.infoPlist` is kept unless you pass the matching plugin option.
 - **Android**: Adds `RECORD_AUDIO` permission to `AndroidManifest.xml`
 
 After adding or modifying the plugin configuration, run:

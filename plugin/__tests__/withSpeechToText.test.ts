@@ -1,5 +1,5 @@
 import withSpeechToText from '../src';
-import type { ExpoConfig } from '@expo/config';
+import type { ExpoConfig } from 'expo/config';
 
 describe('withSpeechToText', () => {
   it('should configure plugin with default properties', () => {

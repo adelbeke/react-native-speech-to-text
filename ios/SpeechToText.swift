@@ -103,11 +103,8 @@ public class SpeechToTextImpl: NSObject {
       try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
       try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
-      recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-      guard let recognitionRequest = recognitionRequest else {
-        reject("REQUEST_FAILED", "Unable to create recognition request", nil)
-        return
-      }
+      let recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+      self.recognitionRequest = recognitionRequest
 
       recognitionRequest.shouldReportPartialResults = true
       if onDevice && speechRecognizer.supportsOnDeviceRecognition {
@@ -153,6 +150,7 @@ public class SpeechToTextImpl: NSObject {
               "code": errorCode,
               "message": errorMessage
             ])
+            self.sendEvent(name: "onSpeechEnd", body: [:])
           }
           return
         }

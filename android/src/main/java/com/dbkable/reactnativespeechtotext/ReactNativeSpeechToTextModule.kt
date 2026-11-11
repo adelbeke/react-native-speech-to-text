@@ -70,14 +70,17 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
           putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
           putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
           putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-          putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-          putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-          putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 10000L)
+          putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000)
+          putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000)
         }
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
           override fun onReadyForSpeech(params: Bundle?) {}
-          override fun onBeginningOfSpeech() {}
+          // Google keeps one session across short pauses and sends each finished segment as a partial result
+          // holding only that segment's text, so the previous segment is committed when speech resumes.
+          override fun onBeginningOfSpeech() {
+            committedTranscript = lastTranscript
+          }
           override fun onRmsChanged(rmsdB: Float) {
             val level = ((rmsdB + 2f) / 14f).coerceIn(0f, 1f)
             val event = Arguments.createMap()
@@ -86,12 +89,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
           }
           override fun onBufferReceived(buffer: ByteArray?) {}
 
-          override fun onEndOfSpeech() {
-            if (!isManuallyStopped && !isContinuous) {
-              val event = Arguments.createMap()
-              sendEvent("onSpeechEnd", event)
-            }
-          }
+          override fun onEndOfSpeech() {}
 
           override fun onError(error: Int) {
             if (!isManuallyStopped) {
@@ -152,19 +150,25 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
               if (matches != null && matches.isNotEmpty()) {
                 lastTranscript = withCommitted(matches[0])
                 lastConfidence = scores?.get(0)?.toDouble() ?: 0.0
-
-                val event = Arguments.createMap()
-                event.putString("transcript", lastTranscript)
-                // In continuous mode a segment result is not the end of the session: stop() sends the final one.
-                event.putBoolean("isFinal", !isContinuous)
-                event.putDouble("confidence", lastConfidence)
-                sendEvent("onSpeechResult", event)
               }
             }
 
-            if (isContinuous && !isManuallyStopped) {
+            if (isManuallyStopped) return
+
+            if (lastTranscript.isNotEmpty()) {
+              val event = Arguments.createMap()
+              event.putString("transcript", lastTranscript)
+              // In continuous mode a segment result is not the end of the session: stop() sends the final one.
+              event.putBoolean("isFinal", !isContinuous)
+              event.putDouble("confidence", lastConfidence)
+              sendEvent("onSpeechResult", event)
+            }
+
+            if (isContinuous) {
               committedTranscript = lastTranscript
               listenAgain(intent)
+            } else {
+              sendEvent("onSpeechEnd", Arguments.createMap())
             }
           }
 
@@ -264,7 +268,8 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  private fun withCommitted(segment: String): String {
+  private fun withCommitted(rawSegment: String): String {
+    val segment = rawSegment.trim()
     if (committedTranscript.isEmpty()) return segment
     if (segment.isEmpty()) return committedTranscript
     return "$committedTranscript $segment"

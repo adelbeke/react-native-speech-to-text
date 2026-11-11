@@ -71,8 +71,13 @@ public class SpeechToTextImpl: NSObject {
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
   ) {
-    DispatchQueue.main.sync {
+    let isAlreadyListening = DispatchQueue.main.sync { () -> Bool in
       if self.isFinishing { self.completeStop() }
+      return self.recognitionTask != nil
+    }
+    guard !isAlreadyListening else {
+      reject("RECOGNIZER_BUSY", "Recognition already in progress", nil)
+      return
     }
 
     lastTranscript = ""
@@ -133,12 +138,13 @@ public class SpeechToTextImpl: NSObject {
       try audioEngine.start()
 
       recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
-        guard let self = self else { return }
+        guard let self = self, recognitionRequest === self.recognitionRequest else { return }
 
         if let error = error {
           if self.isFinishing {
             self.completeStop()
           } else if !self.isManuallyStopped {
+            self.stopRecognition()
             let errorCode = self.mapErrorCode(from: error)
             let errorMessage = self.mapErrorMessage(from: error)
             self.sendEvent(name: "onSpeechError", body: [

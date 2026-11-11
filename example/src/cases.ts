@@ -11,6 +11,68 @@ export interface TestCase {
 
 export const TEST_CASES: TestCase[] = [
   {
+    id: 'graceful-stop-server',
+    title: 'Graceful stop, server, fr-FR (#29)',
+    platform: 'iOS',
+    language: 'fr-FR',
+    onDevice: false,
+    steps: [
+      'Network ON',
+      'Tap Start, say "appeler maman demain à 18 h"',
+      'Tap Stop right after "18 h"',
+    ],
+    expected:
+      'Transcript keeps "18 h". Log: one "final result", then "end event", then "stopped" within ~1s.',
+  },
+  {
+    id: 'graceful-stop-on-device',
+    title: 'Graceful stop, on-device, fr-FR (#29)',
+    platform: 'iOS',
+    language: 'fr-FR',
+    onDevice: true,
+    steps: [
+      'Tap Start, say "appeler maman demain à 18 h"',
+      'Tap Stop right after "18 h"',
+    ],
+    expected:
+      'Transcript keeps "18 h". Log: one "final result", then "end event", then "stopped" within ~1s.',
+  },
+  {
+    id: 'graceful-stop-silent',
+    title: 'Stop without speaking (#29)',
+    platform: 'iOS',
+    language: 'fr-FR',
+    onDevice: false,
+    steps: ['Tap Start, say nothing', 'Tap Stop'],
+    expected: '"end event" then "stopped". No error event.',
+  },
+  {
+    id: 'graceful-stop-restart',
+    title: 'Stop then restart quickly (#29)',
+    platform: 'iOS',
+    language: 'fr-FR',
+    onDevice: false,
+    steps: [
+      'Tap Start, say a sentence, tap Stop',
+      'Immediately tap Start again and keep talking for 5s',
+    ],
+    expected:
+      'Second session keeps listening, not cut after ~1s. No crash when tapping fast: an extra Start logs "start rejected RECOGNIZER_BUSY".',
+  },
+  {
+    id: 'graceful-stop-bad-network',
+    title: 'Stop on bad network (#29)',
+    platform: 'iOS',
+    language: 'fr-FR',
+    onDevice: false,
+    steps: [
+      'Settings > Developer > Network Link Conditioner: Very Bad Network',
+      'Tap Start, say "appeler maman demain à 18 h", tap Stop right after',
+    ],
+    expected:
+      'Check whether "18 h" survives. If not, the 1s timeout is too short.',
+  },
+  {
     id: 'offline-fr',
     title: 'Offline on-device, fr-FR',
     platform: 'iOS',

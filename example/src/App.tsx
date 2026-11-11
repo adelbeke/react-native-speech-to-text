@@ -1,265 +1,67 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
+  FlatList,
+  Platform,
+  SafeAreaView,
   StyleSheet,
-  View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
-  Alert,
 } from 'react-native';
-import {
-  start,
-  stop,
-  requestPermissions,
-  isAvailable,
-  addSpeechResultListener,
-  addSpeechErrorListener,
-  addSpeechEndListener,
-  addAudioMeterUpdateListener,
-  type SpeechResult,
-} from '@dbkable/react-native-speech-to-text';
+import { TEST_CASES, type TestCase } from './cases';
+import { CaseScreen } from './CaseScreen';
+
+const CURRENT_PLATFORM = Platform.OS === 'ios' ? 'iOS' : 'Android';
+const PLATFORM_CASES = TEST_CASES.filter(
+  (testCase) =>
+    testCase.platform === 'All' || testCase.platform === CURRENT_PLATFORM
+);
 
 export default function App() {
-  const [transcript, setTranscript] = useState<string>('');
-  const [isListening, setIsListening] = useState(false);
-  const [confidence, setConfidence] = useState<number>(0);
-  const [meterLevel, setMeterLevel] = useState<number>(0);
-  const [listenerStatus, setListenerStatus] = useState('Not attached');
-
-  useEffect(() => {
-    console.log('📌 Setting up listeners...');
-    setListenerStatus('Attaching...');
-
-    const resultListener = addSpeechResultListener((result: SpeechResult) => {
-      console.log('✅ RECEIVED Result:', result);
-
-      if (result.transcript) {
-        setTranscript(result.transcript);
-        setConfidence(result.confidence);
-      }
-    });
-
-    const errorListener = addSpeechErrorListener((error) => {
-      console.log('❌ RECEIVED Error:', error);
-      Alert.alert('Error', `${error.code}: ${error.message}`);
-      setIsListening(false);
-    });
-
-    const endListener = addSpeechEndListener(() => {
-      console.log('🏁 RECEIVED End');
-      setIsListening(false);
-      setMeterLevel(0);
-    });
-
-    const meterListener = addAudioMeterUpdateListener((update) => {
-      setMeterLevel(update.level);
-    });
-
-    setListenerStatus('Attached ✅');
-    console.log('✅ Listeners attached');
-
-    return () => {
-      console.log('🧹 Cleaning up listeners...');
-      resultListener.remove();
-      errorListener.remove();
-      endListener.remove();
-      meterListener.remove();
-      setListenerStatus('Removed');
-    };
-  }, []);
-
-  const handleStart = async () => {
-    try {
-      console.log('🎤 Starting...');
-
-      const available = await isAvailable();
-      console.log('Available:', available);
-
-      if (!available) {
-        Alert.alert('Error', 'Speech recognition not available');
-        return;
-      }
-
-      const hasPermission = await requestPermissions();
-      console.log('Permission:', hasPermission);
-
-      if (!hasPermission) {
-        Alert.alert(
-          'Permission Denied',
-          'Microphone or speech recognition denied'
-        );
-        return;
-      }
-
-      await start({ language: 'en-US' });
-      setIsListening(true);
-      setTranscript('🎤 Listening...');
-      setConfidence(0);
-      setMeterLevel(0);
-      console.log('✅ Started recording');
-    } catch (error) {
-      console.error('❌ Start error:', error);
-      Alert.alert('Error', String(error));
-    }
-  };
-
-  const handleStop = async () => {
-    try {
-      console.log('⏹ Stopping...');
-      await stop();
-      console.log('✅ Stopped recording');
-    } catch (error) {
-      console.error('❌ Stop error:', error);
-      Alert.alert('Error', String(error));
-      setIsListening(false);
-    }
-  };
+  const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Speech to Text</Text>
-
-        <Text style={styles.debug}>Listeners: {listenerStatus}</Text>
-
-        <View style={styles.resultContainer}>
-          <Text style={styles.label}>Transcription:</Text>
-          <Text style={styles.transcript}>
-            {transcript || 'Press the button to start speaking'}
-          </Text>
-
-          {confidence > 0 && (
-            <Text style={styles.confidence}>
-              Confidence: {(confidence * 100).toFixed(0)}%
-            </Text>
+      {selectedCase ? (
+        <CaseScreen
+          testCase={selectedCase}
+          onBack={() => setSelectedCase(null)}
+        />
+      ) : (
+        <FlatList
+          data={PLATFORM_CASES}
+          keyExtractor={(testCase) => testCase.id}
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={<Text style={styles.title}>Test cases</Text>}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.item}
+              onPress={() => setSelectedCase(item)}
+              accessibilityRole="button"
+            >
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={styles.itemMeta}>
+                {item.platform} · {item.language} · onDevice:{' '}
+                {String(item.onDevice)} · continuous:{' '}
+                {String(item.continuous ?? false)}
+              </Text>
+            </TouchableOpacity>
           )}
-
-          {isListening && (
-            <View style={styles.meterContainer}>
-              <View
-                style={[
-                  styles.meterFill,
-                  { width: `${Math.round(meterLevel * 100)}%` },
-                ]}
-              />
-            </View>
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.button,
-            isListening ? styles.buttonStop : styles.buttonStart,
-          ]}
-          onPress={isListening ? handleStop : handleStart}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.buttonText}>
-            {isListening ? '⏹ Stop' : '🎤 Start'}
-          </Text>
-        </TouchableOpacity>
-
-        <Text style={styles.hint}>
-          {isListening
-            ? 'Speak now... (real-time transcription)'
-            : 'Language: English (en-US)'}
-        </Text>
-      </View>
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
-  },
-  debug: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 20,
-  },
-  resultContainer: {
-    width: '100%',
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  list: { padding: 20 },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#333', marginBottom: 16 },
+  item: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 20,
-    marginBottom: 30,
-    minHeight: 150,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    padding: 16,
     marginBottom: 10,
   },
-  transcript: {
-    fontSize: 18,
-    color: '#333',
-    lineHeight: 26,
-  },
-  confidence: {
-    fontSize: 14,
-    color: '#4CAF50',
-    marginTop: 10,
-    fontWeight: '600',
-  },
-  meterContainer: {
-    height: 8,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    marginTop: 12,
-    overflow: 'hidden',
-  },
-  meterFill: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 4,
-  },
-  button: {
-    paddingHorizontal: 40,
-    paddingVertical: 16,
-    borderRadius: 25,
-    minWidth: 200,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  buttonStart: {
-    backgroundColor: '#4CAF50',
-  },
-  buttonStop: {
-    backgroundColor: '#f44336',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  hint: {
-    marginTop: 20,
-    fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
-  },
+  itemTitle: { fontSize: 17, fontWeight: '600', color: '#333' },
+  itemMeta: { fontSize: 13, color: '#888', marginTop: 4 },
 });

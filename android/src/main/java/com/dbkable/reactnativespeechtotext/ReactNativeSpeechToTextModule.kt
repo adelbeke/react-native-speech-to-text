@@ -36,7 +36,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  override fun start(language: String, continuous: Boolean, promise: Promise) {
+  override fun start(language: String, onDevice: Boolean, continuous: Boolean, promise: Promise) {
     val context = reactApplicationContext
 
     lastTranscript = ""
@@ -242,6 +242,12 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
     val context = reactApplicationContext
     val available = SpeechRecognizer.isRecognitionAvailable(context)
     promise.resolve(available)
+  }
+
+  // The onDevice option is only implemented on iOS, so Android never claims support.
+  @ReactMethod
+  override fun isOnDeviceAvailable(language: String, promise: Promise) {
+    promise.resolve(false)
   }
 
   @ReactMethod

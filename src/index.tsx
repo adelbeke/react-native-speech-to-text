@@ -75,6 +75,7 @@ export interface AudioMeterUpdate {
 
 export interface SpeechToTextOptions {
   language: string;
+  onDevice?: boolean;
   continuous?: boolean;
 }
 
@@ -89,6 +90,7 @@ export interface PermissionOptions {
 export async function start(options: SpeechToTextOptions): Promise<void> {
   return SpeechToTextModule.start(
     options.language,
+    options.onDevice ?? false,
     options.continuous ?? false
   );
 }
@@ -126,6 +128,10 @@ export async function requestPermissions(
 
 export async function isAvailable(): Promise<boolean> {
   return SpeechToTextModule.isAvailable();
+}
+
+export async function isOnDeviceAvailable(language: string): Promise<boolean> {
+  return SpeechToTextModule.isOnDeviceAvailable(language);
 }
 
 export function addSpeechResultListener(

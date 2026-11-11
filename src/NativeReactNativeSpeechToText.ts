@@ -8,7 +8,7 @@ export interface SpeechResult {
 }
 
 export interface Spec extends TurboModule {
-  start(language: string): Promise<void>;
+  start(language: string, continuous: boolean): Promise<void>;
   stop(): Promise<void>;
   requestPermissions(): Promise<boolean>;
   isAvailable(): Promise<boolean>;

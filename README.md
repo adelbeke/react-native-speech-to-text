@@ -202,6 +202,7 @@ await start({ language: 'en-US' });
 **Options:**
 
 - `language` (string, required): Language code (e.g., "en-US", "fr-FR", "es-ES", "de-DE")
+- `continuous` (boolean, optional, default `false`, Android only): Keep listening through pauses until `stop()` is called. The recognizer restarts after each pause and results carry the whole transcript so far. Results stay `isFinal: false` until `stop()` sends the final one. iOS already keeps listening until `stop()` and ignores this option.
 
 **Throws:**
 

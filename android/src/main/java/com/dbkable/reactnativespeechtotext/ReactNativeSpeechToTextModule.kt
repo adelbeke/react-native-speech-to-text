@@ -26,6 +26,8 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
   private var lastTranscript: String = ""
   private var lastConfidence: Double = 0.0
   private var isManuallyStopped: Boolean = false
+  private var isContinuous: Boolean = false
+  private var committedTranscript: String = ""
 
   private fun sendEvent(eventName: String, params: WritableMap?) {
     reactApplicationContext
@@ -34,12 +36,14 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  override fun start(language: String, promise: Promise) {
+  override fun start(language: String, continuous: Boolean, promise: Promise) {
     val context = reactApplicationContext
 
     lastTranscript = ""
     lastConfidence = 0.0
     isManuallyStopped = false
+    isContinuous = continuous
+    committedTranscript = ""
 
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
       != PackageManager.PERMISSION_GRANTED) {
@@ -83,7 +87,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
           override fun onBufferReceived(buffer: ByteArray?) {}
 
           override fun onEndOfSpeech() {
-            if (!isManuallyStopped) {
+            if (!isManuallyStopped && !isContinuous) {
               val event = Arguments.createMap()
               sendEvent("onSpeechEnd", event)
             }
@@ -93,6 +97,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
             if (!isManuallyStopped) {
               if (error == SpeechRecognizer.ERROR_NO_MATCH ||
                 error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                if (isContinuous) listenAgain(intent)
                 return
               }
 
@@ -145,15 +150,21 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
               val scores = it.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
 
               if (matches != null && matches.isNotEmpty()) {
-                lastTranscript = matches[0]
+                lastTranscript = withCommitted(matches[0])
                 lastConfidence = scores?.get(0)?.toDouble() ?: 0.0
 
                 val event = Arguments.createMap()
                 event.putString("transcript", lastTranscript)
-                event.putBoolean("isFinal", true)
+                // In continuous mode a segment result is not the end of the session: stop() sends the final one.
+                event.putBoolean("isFinal", !isContinuous)
                 event.putDouble("confidence", lastConfidence)
                 sendEvent("onSpeechResult", event)
               }
+            }
+
+            if (isContinuous && !isManuallyStopped) {
+              committedTranscript = lastTranscript
+              listenAgain(intent)
             }
           }
 
@@ -163,7 +174,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
               val scores = it.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
 
               if (matches != null && matches.isNotEmpty()) {
-                lastTranscript = matches[0]
+                lastTranscript = withCommitted(matches[0])
                 lastConfidence = scores?.get(0)?.toDouble() ?: 0.0
 
                 val event = Arguments.createMap()
@@ -244,6 +255,20 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
     android.os.Handler(android.os.Looper.getMainLooper()).post {
       speechRecognizer?.destroy()
       speechRecognizer = null
+    }
+  }
+
+  private fun withCommitted(segment: String): String {
+    if (committedTranscript.isEmpty()) return segment
+    if (segment.isEmpty()) return committedTranscript
+    return "$committedTranscript $segment"
+  }
+
+  private fun listenAgain(intent: Intent) {
+    android.os.Handler(android.os.Looper.getMainLooper()).post {
+      if (!isManuallyStopped) {
+        speechRecognizer?.startListening(intent)
+      }
     }
   }
 

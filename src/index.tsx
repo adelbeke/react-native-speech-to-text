@@ -75,6 +75,7 @@ export interface AudioMeterUpdate {
 
 export interface SpeechToTextOptions {
   language: string;
+  continuous?: boolean;
 }
 
 export interface PermissionOptions {
@@ -86,8 +87,10 @@ export interface PermissionOptions {
 }
 
 export async function start(options: SpeechToTextOptions): Promise<void> {
-  const language = options.language;
-  return SpeechToTextModule.start(language);
+  return SpeechToTextModule.start(
+    options.language,
+    options.continuous ?? false
+  );
 }
 
 export async function stop(): Promise<void> {

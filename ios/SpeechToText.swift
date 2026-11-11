@@ -3,6 +3,8 @@ import Speech
 import AVFoundation
 import React
 
+private let finalResultTimeout: TimeInterval = 1.0
+
 @objc(SpeechToTextImpl)
 public class SpeechToTextImpl: NSObject {
 
@@ -14,6 +16,9 @@ public class SpeechToTextImpl: NSObject {
   private var lastTranscript: String = ""
   private var lastConfidence: Double = 0.0
   private var isManuallyStopped: Bool = false
+  private var isFinishing: Bool = false
+  private var finishTimeout: DispatchWorkItem?
+  private var pendingStopResolvers: [RCTPromiseResolveBlock] = []
   private var savedAudioSession: (category: AVAudioSession.Category, mode: AVAudioSession.Mode)?
 
   @objc public init(eventEmitter: RCTEventEmitter) {
@@ -66,6 +71,10 @@ public class SpeechToTextImpl: NSObject {
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
   ) {
+    DispatchQueue.main.sync {
+      if self.isFinishing { self.completeStop() }
+    }
+
     lastTranscript = ""
     lastConfidence = 0.0
     isManuallyStopped = false
@@ -127,7 +136,9 @@ public class SpeechToTextImpl: NSObject {
         guard let self = self else { return }
 
         if let error = error {
-          if !self.isManuallyStopped {
+          if self.isFinishing {
+            self.completeStop()
+          } else if !self.isManuallyStopped {
             let errorCode = self.mapErrorCode(from: error)
             let errorMessage = self.mapErrorMessage(from: error)
             self.sendEvent(name: "onSpeechError", body: [
@@ -145,6 +156,11 @@ public class SpeechToTextImpl: NSObject {
 
           self.lastTranscript = transcript
           self.lastConfidence = confidence
+
+          if isFinal && self.isFinishing {
+            self.completeStop()
+            return
+          }
 
           self.sendEvent(name: "onSpeechResult", body: [
             "transcript": transcript,
@@ -170,7 +186,31 @@ public class SpeechToTextImpl: NSObject {
   resolve: @escaping RCTPromiseResolveBlock,
   reject: @escaping RCTPromiseRejectBlock
   ) {
-    isManuallyStopped = true
+    DispatchQueue.main.async {
+      self.pendingStopResolvers.append(resolve)
+      guard !self.isFinishing else { return }
+
+      self.isManuallyStopped = true
+      guard self.recognitionTask != nil else {
+        self.completeStop()
+        return
+      }
+
+      self.isFinishing = true
+      self.audioEngine.stop()
+      self.audioEngine.inputNode.removeTap(onBus: 0)
+      self.recognitionRequest?.endAudio()
+
+      let timeout = DispatchWorkItem { [weak self] in self?.completeStop() }
+      self.finishTimeout = timeout
+      DispatchQueue.main.asyncAfter(deadline: .now() + finalResultTimeout, execute: timeout)
+    }
+  }
+
+  private func completeStop() {
+    isFinishing = false
+    finishTimeout?.cancel()
+    finishTimeout = nil
 
     if !lastTranscript.isEmpty {
       sendEvent(name: "onSpeechResult", body: [
@@ -182,7 +222,10 @@ public class SpeechToTextImpl: NSObject {
 
     stopRecognition()
     sendEvent(name: "onSpeechEnd", body: [:])
-    resolve(nil)
+
+    let resolvers = pendingStopResolvers
+    pendingStopResolvers = []
+    resolvers.forEach { $0(nil) }
   }
 
   private func stopRecognition() {

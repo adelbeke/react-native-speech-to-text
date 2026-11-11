@@ -55,6 +55,7 @@ RCT_EXPORT_MODULE(ReactNativeSpeechToText)
 
 RCT_EXPORT_METHOD(start:(NSString *)language
                   onDevice:(BOOL)onDevice
+                  continuous:(BOOL)continuous
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
   [_impl startWithLanguage:language onDevice:onDevice resolve:resolve reject:reject];

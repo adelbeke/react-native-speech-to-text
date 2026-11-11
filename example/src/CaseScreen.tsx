@@ -111,8 +111,14 @@ export function CaseScreen({
       setTranscript('');
       setConfidence(0);
       setElapsedSeconds(0);
-      await start({ language, onDevice: testCase.onDevice });
-      log(`started (${language}, onDevice: ${testCase.onDevice})`);
+      await start({
+        language,
+        onDevice: testCase.onDevice,
+        continuous: testCase.continuous,
+      });
+      log(
+        `started (${language}, onDevice: ${testCase.onDevice}, continuous: ${testCase.continuous ?? false})`
+      );
       setIsListening(true);
       timerRef.current = setInterval(
         () => setElapsedSeconds((seconds) => seconds + 1),

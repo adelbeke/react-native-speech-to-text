@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   FlatList,
+  Platform,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -8,6 +9,12 @@ import {
 } from 'react-native';
 import { TEST_CASES, type TestCase } from './cases';
 import { CaseScreen } from './CaseScreen';
+
+const CURRENT_PLATFORM = Platform.OS === 'ios' ? 'iOS' : 'Android';
+const PLATFORM_CASES = TEST_CASES.filter(
+  (testCase) =>
+    testCase.platform === 'All' || testCase.platform === CURRENT_PLATFORM
+);
 
 export default function App() {
   const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
@@ -21,7 +28,7 @@ export default function App() {
         />
       ) : (
         <FlatList
-          data={TEST_CASES}
+          data={PLATFORM_CASES}
           keyExtractor={(testCase) => testCase.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={<Text style={styles.title}>Test cases</Text>}
@@ -34,7 +41,8 @@ export default function App() {
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text style={styles.itemMeta}>
                 {item.platform} · {item.language} · onDevice:{' '}
-                {String(item.onDevice)}
+                {String(item.onDevice)} · continuous:{' '}
+                {String(item.continuous ?? false)}
               </Text>
             </TouchableOpacity>
           )}

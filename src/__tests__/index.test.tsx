@@ -25,7 +25,7 @@ describe('start', () => {
     await start({ language: 'fr-FR', onDevice: true });
 
     // THEN
-    expect(nativeModule.start).toHaveBeenCalledWith('fr-FR', true);
+    expect(nativeModule.start).toHaveBeenCalledWith('fr-FR', true, false);
   });
 
   it('passes onDevice false to the native module when omitted', async () => {
@@ -33,7 +33,15 @@ describe('start', () => {
     await start({ language: 'en-US' });
 
     // THEN
-    expect(nativeModule.start).toHaveBeenCalledWith('en-US', false);
+    expect(nativeModule.start).toHaveBeenCalledWith('en-US', false, false);
+  });
+
+  it('passes continuous true to the native module when requested', async () => {
+    // WHEN
+    await start({ language: 'fr-FR', continuous: true });
+
+    // THEN
+    expect(nativeModule.start).toHaveBeenCalledWith('fr-FR', false, true);
   });
 });
 

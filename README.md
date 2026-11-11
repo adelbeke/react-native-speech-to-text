@@ -203,6 +203,7 @@ await start({ language: 'en-US' });
 
 - `language` (string, required): Language code (e.g., "en-US", "fr-FR", "es-ES", "de-DE")
 - `onDevice` (boolean, optional, default `false`, iOS only): Keep recognition on the device, so it works offline. If the device does not support on-device recognition for `language`, recognition falls back to Apple's servers. Use `isOnDeviceAvailable()` to know which mode will run. Ignored on Android.
+- `continuous` (boolean, optional, default `false`, Android only): Keep listening through pauses until `stop()` is called. The recognizer restarts after each pause and results carry the whole transcript so far. Results stay `isFinal: false` until `stop()` sends the final one. iOS already keeps listening until `stop()` and ignores this option.
 
 > **iOS server limit:** without on-device recognition, iOS sends audio to Apple's servers, which needs a network connection and stops each recognition session after about one minute.
 

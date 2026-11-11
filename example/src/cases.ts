@@ -4,6 +4,7 @@ export interface TestCase {
   platform: 'iOS' | 'Android' | 'All';
   language: string;
   onDevice: boolean;
+  continuous?: boolean;
   steps: string[];
   expected: string;
 }
@@ -103,5 +104,61 @@ export const TEST_CASES: TestCase[] = [
       'Tap Stop',
     ],
     expected: 'A transcript appears. onDevice changes nothing on Android.',
+  },
+  {
+    id: 'android-pause-ends',
+    title: 'Pause ends the session (control)',
+    platform: 'Android',
+    language: 'en-US',
+    onDevice: false,
+    steps: ['Tap Start and say an English sentence', 'Stay silent for 3s'],
+    expected:
+      'About 2s into the silence: "final result" then "end event". Compare with the next case.',
+  },
+  {
+    id: 'android-continuous-pause',
+    title: 'Continuous: pause keeps listening',
+    platform: 'Android',
+    language: 'en-US',
+    onDevice: false,
+    continuous: true,
+    steps: [
+      'Tap Start and say an English sentence',
+      'Stay silent for 3s',
+      'Say a second sentence',
+      'Tap Stop',
+    ],
+    expected:
+      'No "final result" or "end event" during the pause. The transcript keeps the first sentence and grows. After Stop: "final result" with both sentences, then "end event".',
+  },
+  {
+    id: 'android-continuous-silent-start',
+    title: 'Continuous: long silence at start',
+    platform: 'Android',
+    language: 'en-US',
+    onDevice: false,
+    continuous: true,
+    steps: [
+      'Tap Start and say nothing until the timer passes 8s',
+      'Say an English sentence',
+      'Tap Stop',
+    ],
+    expected:
+      'No error or "end event" during the silence. The sentence appears, then "final result" and "end event" after Stop.',
+  },
+  {
+    id: 'android-continuous-many-pauses',
+    title: 'Continuous: many pauses (60s)',
+    platform: 'Android',
+    language: 'en-US',
+    onDevice: false,
+    continuous: true,
+    steps: [
+      'Tap Start',
+      'Alternate a short sentence and 3s of silence until the timer passes 60s',
+      'Tap Stop',
+    ],
+    expected:
+      'No RECOGNIZER_BUSY or other error event. Every sentence is in the final transcript. Note if the system beeps at each pause (device-dependent, report the model).',
   },
 ];

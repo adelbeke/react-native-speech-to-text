@@ -103,6 +103,12 @@ public class SpeechToTextImpl: NSObject {
       savedAudioSession = (audioSession.category, audioSession.mode, audioSession.categoryOptions)
       try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
       try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+      NotificationCenter.default.addObserver(
+        self,
+        selector: #selector(handleAudioSessionInterruption),
+        name: AVAudioSession.interruptionNotification,
+        object: audioSession
+      )
 
       let recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
       self.recognitionRequest = recognitionRequest
@@ -239,7 +245,19 @@ public class SpeechToTextImpl: NSObject {
     resolvers.forEach { $0(nil) }
   }
 
+  @objc private func handleAudioSessionInterruption(_ notification: Notification) {
+    guard
+      let rawType = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+      AVAudioSession.InterruptionType(rawValue: rawType) == .began
+    else { return }
+    DispatchQueue.main.async {
+      guard self.isFinishing || self.recognitionTask != nil else { return }
+      self.completeStop()
+    }
+  }
+
   private func stopRecognition() {
+    NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
     audioEngine.stop()
     audioEngine.inputNode.removeTap(onBus: 0)
     recognitionRequest?.endAudio()

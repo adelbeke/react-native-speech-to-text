@@ -147,6 +147,7 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
               event.putString("code", errorCode)
               event.putString("message", errorMessage)
               sendEvent("onSpeechError", event)
+              sendEvent("onSpeechEnd", Arguments.createMap())
             }
           }
 

@@ -29,6 +29,7 @@
   "scripts": {
     "example": "yarn workspace @dbkable/react-native-speech-to-text-example",
     "test": "jest --passWithNoTests",
+    "test:ios": "swiftc ios/TranscriptAccumulator.swift ios-tests/main.swift -o \"${TMPDIR:-/tmp}/ios-tests\" && \"${TMPDIR:-/tmp}/ios-tests\"",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib plugin/build",

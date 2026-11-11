@@ -13,7 +13,8 @@ public class SpeechToTextImpl: NSObject {
   private var recognitionTask: SFSpeechRecognitionTask?
   private var audioEngine = AVAudioEngine()
   private weak var eventEmitter: RCTEventEmitter?
-  private var lastTranscript: String = ""
+  private var transcriptAccumulator = TranscriptAccumulator()
+  private var lastTranscript: String { transcriptAccumulator.transcript }
   private var lastConfidence: Double = 0.0
   private var isManuallyStopped: Bool = false
   private var isFinishing: Bool = false
@@ -80,7 +81,7 @@ public class SpeechToTextImpl: NSObject {
       return
     }
 
-    lastTranscript = ""
+    transcriptAccumulator = TranscriptAccumulator()
     lastConfidence = 0.0
     isManuallyStopped = false
 
@@ -156,11 +157,14 @@ public class SpeechToTextImpl: NSObject {
         }
 
         if let result = result {
-          let transcript = result.bestTranscription.formattedString
+          // The recognizer attaches metadata to the last result of each utterance.
+          let transcript = self.transcriptAccumulator.add(
+            result.bestTranscription.formattedString,
+            utteranceEnded: result.speechRecognitionMetadata != nil
+          )
           let isFinal = result.isFinal
           let confidence = self.getConfidence(from: result)
 
-          self.lastTranscript = transcript
           self.lastConfidence = confidence
 
           if isFinal && self.isFinishing {

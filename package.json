@@ -122,6 +122,9 @@
     ]
   },
   "release-it": {
+    "hooks": {
+      "after:bump": "cd example && bundle exec pod install --project-directory=ios"
+    },
     "git": {
       "commitMessage": "chore: release ${version}",
       "tagName": "v${version}"

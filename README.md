@@ -324,7 +324,7 @@ listener.remove();
 
 #### `addSpeechEndListener(callback: () => void): EmitterSubscription`
 
-Called when speech recognition ends.
+Called when speech recognition ends. When a session ends on its own, the final result (`isFinal: true`) is always emitted before this event, on both platforms.
 
 ```typescript
 const listener = addSpeechEndListener(() => {

@@ -19,7 +19,7 @@ public class SpeechToTextImpl: NSObject {
   private var isFinishing: Bool = false
   private var finishTimeout: DispatchWorkItem?
   private var pendingStopResolvers: [RCTPromiseResolveBlock] = []
-  private var savedAudioSession: (category: AVAudioSession.Category, mode: AVAudioSession.Mode)?
+  private var savedAudioSession: (category: AVAudioSession.Category, mode: AVAudioSession.Mode, options: AVAudioSession.CategoryOptions)?
 
   @objc public init(eventEmitter: RCTEventEmitter) {
     self.eventEmitter = eventEmitter
@@ -99,7 +99,7 @@ public class SpeechToTextImpl: NSObject {
 
     do {
       let audioSession = AVAudioSession.sharedInstance()
-      savedAudioSession = (audioSession.category, audioSession.mode)
+      savedAudioSession = (audioSession.category, audioSession.mode, audioSession.categoryOptions)
       try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
       try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
@@ -194,15 +194,15 @@ public class SpeechToTextImpl: NSObject {
   reject: @escaping RCTPromiseRejectBlock
   ) {
     DispatchQueue.main.async {
+      guard self.isFinishing || self.recognitionTask != nil else {
+        resolve(nil)
+        return
+      }
+
       self.pendingStopResolvers.append(resolve)
       guard !self.isFinishing else { return }
 
       self.isManuallyStopped = true
-      guard self.recognitionTask != nil else {
-        self.completeStop()
-        return
-      }
-
       self.isFinishing = true
       self.audioEngine.stop()
       self.audioEngine.inputNode.removeTap(onBus: 0)
@@ -242,10 +242,11 @@ public class SpeechToTextImpl: NSObject {
     recognitionTask?.cancel()
     recognitionRequest = nil
     recognitionTask = nil
-    if let saved = savedAudioSession {
-      try? AVAudioSession.sharedInstance().setCategory(saved.category, mode: saved.mode)
-    }
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    guard let saved = savedAudioSession else { return }
+    savedAudioSession = nil
+    let audioSession = AVAudioSession.sharedInstance()
+    try? audioSession.setCategory(saved.category, mode: saved.mode, options: saved.options)
+    try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
   }
 
   private func getConfidence(from result: SFSpeechRecognitionResult) -> Double {

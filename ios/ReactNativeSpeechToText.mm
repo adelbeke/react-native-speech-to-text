@@ -12,6 +12,8 @@
                                reject:(RCTPromiseRejectBlock)reject;
 - (void)isAvailableWithResolve:(RCTPromiseResolveBlock)resolve
                         reject:(RCTPromiseRejectBlock)reject;
+- (void)getSpeechRecognitionPermissionWithResolve:(RCTPromiseResolveBlock)resolve
+                                           reject:(RCTPromiseRejectBlock)reject;
 - (void)isOnDeviceAvailableWithLanguage:(NSString *)language
                                 resolve:(RCTPromiseResolveBlock)resolve
                                  reject:(RCTPromiseRejectBlock)reject;
@@ -74,6 +76,11 @@ RCT_EXPORT_METHOD(requestPermissions:(RCTPromiseResolveBlock)resolve
 RCT_EXPORT_METHOD(isAvailable:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
   [_impl isAvailableWithResolve:resolve reject:reject];
+}
+
+RCT_EXPORT_METHOD(getSpeechRecognitionPermission:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
+  [_impl getSpeechRecognitionPermissionWithResolve:resolve reject:reject];
 }
 
 RCT_EXPORT_METHOD(isOnDeviceAvailable:(NSString *)language

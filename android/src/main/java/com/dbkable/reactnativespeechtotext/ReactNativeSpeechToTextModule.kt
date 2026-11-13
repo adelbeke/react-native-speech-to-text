@@ -297,6 +297,12 @@ class ReactNativeSpeechToTextModule(reactContext: ReactApplicationContext) :
     promise.resolve(available)
   }
 
+  // Android has no permission dedicated to speech recognition: RECORD_AUDIO covers it.
+  @ReactMethod
+  override fun getSpeechRecognitionPermission(promise: Promise) {
+    promise.resolve("granted")
+  }
+
   // The onDevice option is only implemented on iOS, so Android never claims support.
   @ReactMethod
   override fun isOnDeviceAvailable(language: String, promise: Promise) {

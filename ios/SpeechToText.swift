@@ -57,6 +57,22 @@ public class SpeechToTextImpl: NSObject {
     resolve(available)
   }
 
+  @objc public func getSpeechRecognitionPermission(
+  resolve: @escaping RCTPromiseResolveBlock,
+  reject: @escaping RCTPromiseRejectBlock
+  ) {
+    switch SFSpeechRecognizer.authorizationStatus() {
+    case .authorized:
+      resolve("granted")
+    case .denied, .restricted:
+      resolve("denied")
+    case .notDetermined:
+      resolve("undetermined")
+    @unknown default:
+      resolve("undetermined")
+    }
+  }
+
   @objc public func isOnDeviceAvailable(
   language: String,
   resolve: @escaping RCTPromiseResolveBlock,

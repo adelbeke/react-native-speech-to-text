@@ -16,6 +16,7 @@ export interface Spec extends TurboModule {
   stop(): Promise<void>;
   requestPermissions(): Promise<boolean>;
   isAvailable(): Promise<boolean>;
+  getSpeechRecognitionPermission(): Promise<string>;
   isOnDeviceAvailable(language: string): Promise<boolean>;
   addListener(eventName: string): void;
   removeListeners(count: number): void;

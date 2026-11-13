@@ -251,6 +251,17 @@ const granted = await requestPermissions({
 
 ---
 
+#### `getSpeechRecognitionPermission(): Promise<'granted' | 'denied' | 'undetermined'>`
+
+Reads the speech recognition authorization without prompting. On iOS it returns `undetermined` until `requestPermissions()` has been called, even if the microphone is already granted. Android has no separate speech recognition permission, so it always returns `granted` (check `RECORD_AUDIO` for the microphone).
+
+```typescript
+const status = await getSpeechRecognitionPermission();
+if (status === 'undetermined') {
+  // show your own explanation before calling requestPermissions()
+}
+```
+
 #### `isAvailable(): Promise<boolean>`
 
 Checks if speech recognition is available on the device.

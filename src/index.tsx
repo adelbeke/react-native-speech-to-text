@@ -130,6 +130,18 @@ export async function isAvailable(): Promise<boolean> {
   return SpeechToTextModule.isAvailable();
 }
 
+export type SpeechRecognitionPermission = 'granted' | 'denied' | 'undetermined';
+
+const isSpeechRecognitionPermission = (
+  status: string
+): status is SpeechRecognitionPermission =>
+  status === 'granted' || status === 'denied' || status === 'undetermined';
+
+export async function getSpeechRecognitionPermission(): Promise<SpeechRecognitionPermission> {
+  const status = await SpeechToTextModule.getSpeechRecognitionPermission();
+  return isSpeechRecognitionPermission(status) ? status : 'undetermined';
+}
+
 export async function isOnDeviceAvailable(language: string): Promise<boolean> {
   return SpeechToTextModule.isOnDeviceAvailable(language);
 }

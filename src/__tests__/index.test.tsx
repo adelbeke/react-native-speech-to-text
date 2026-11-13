@@ -1,5 +1,9 @@
 import NativeSpeechToText from '../NativeReactNativeSpeechToText';
-import { isOnDeviceAvailable, start } from '../index';
+import {
+  getSpeechRecognitionPermission,
+  isOnDeviceAvailable,
+  start,
+} from '../index';
 
 jest.mock('react-native/Libraries/EventEmitter/NativeEventEmitter');
 
@@ -8,6 +12,9 @@ jest.mock('../NativeReactNativeSpeechToText', () => ({
   default: {
     start: jest.fn(() => Promise.resolve()),
     isOnDeviceAvailable: jest.fn(() => Promise.resolve(true)),
+    getSpeechRecognitionPermission: jest.fn(() =>
+      Promise.resolve('undetermined')
+    ),
     addListener: jest.fn(),
     removeListeners: jest.fn(),
   },
@@ -57,5 +64,26 @@ describe('isOnDeviceAvailable', () => {
     // THEN
     expect(nativeModule.isOnDeviceAvailable).toHaveBeenCalledWith('fr-FR');
     expect(actual).toBe(true);
+  });
+});
+
+describe('getSpeechRecognitionPermission', () => {
+  it('returns the status reported by the native module', async () => {
+    // WHEN
+    const actual = await getSpeechRecognitionPermission();
+
+    // THEN
+    expect(actual).toBe('undetermined');
+  });
+
+  it('falls back to undetermined when the native module reports an unknown status', async () => {
+    // GIVEN
+    nativeModule.getSpeechRecognitionPermission.mockResolvedValueOnce('weird');
+
+    // WHEN
+    const actual = await getSpeechRecognitionPermission();
+
+    // THEN
+    expect(actual).toBe('undetermined');
   });
 });
